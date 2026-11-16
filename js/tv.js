@@ -135,7 +135,7 @@
       case 'lobby': if (p && isHost(p) && S.phase === 'over') toLobby(); return;
       case 'pick': if (p && isHost(p) && (S.phase === 'lobby' || S.phase === 'over')) pickGame(d.game); return;
       case 'pong': if (p && typeof d.t === 'number') { const r = performance.now() - d.t; if (r >= 0 && r < 3000) p.rtt = p.rtt == null ? r : p.rtt * 0.7 + r * 0.3; } return;
-      case 'tap': case 'jump': case 'joy': case 'dash': case 'ans': case 'toss':
+      case 'tap': case 'jump': case 'move': case 'joy': case 'dash': case 'ans': case 'toss':
         if (p && mini && S.phase === 'play') mini.input(partOf(p), d, performance.now());
         return;
       case 'aim': if (p && isTurn(p)) game.setAim(d.ax, d.p); return;
@@ -262,11 +262,13 @@
   function miniOver(res) {
     S.phase = 'over'; S.winner = res.winner.p || res.winner;
     hideBanner();
-    showOver(res.winner, res.stats, res.rank);
+    showOver(res.winner, res.stats, res.rank, res.title, res.icon);
     broadcast();
   }
 
-  function showOver(w, stats, rank) {
+  function showOver(w, stats, rank, title, icon) {
+    $('.over-k').textContent = title || 'Νικητής';
+    $('.trophy').textContent = icon || '🏆';
     $('#winName').textContent = w.name; $('#winName').style.color = w.color.hex;
     $('#winStats').textContent = stats;
     $('#rank').replaceChildren(...rank.map((q, i) => {
@@ -389,6 +391,9 @@
     balloon: '<svg viewBox="0 0 64 64"><path d="M32 46c-2 6 4 8 1 15" fill="none" stroke="#1c1a2b" stroke-width="2.5"/><ellipse cx="32" cy="25" rx="16" ry="20" fill="#3da9ff" stroke="#1c1a2b" stroke-width="3"/><path d="M29 45h6l-3 4z" fill="#2a7fc4" stroke="#1c1a2b" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="25" cy="17" rx="3" ry="6" fill="#fff" opacity=".6" transform="rotate(25 25 17)"/></svg>',
     who: '<svg viewBox="0 0 64 64"><rect x="10" y="6" width="44" height="52" rx="8" fill="#3a2580" stroke="#1c1a2b" stroke-width="3"/><circle cx="32" cy="27" r="9" fill="#9b5de5"/><path d="M16 52c2-10 9-14 16-14s14 4 16 14z" fill="#9b5de5"/><text x="32" y="32" text-anchor="middle" font-size="15" font-weight="800" fill="#ffc93d" font-family="sans-serif">?</text></svg>',
     tomato: '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="36" rx="22" ry="20" fill="#e8302a" stroke="#1c1a2b" stroke-width="3"/><path d="M32 17l5-6 1 7 7-2-5 6-8 1-8-1-5-6 7 2 1-7z" fill="#3aa64a" stroke="#1c1a2b" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="23" cy="30" rx="3.5" ry="6" fill="#fff" opacity=".5" transform="rotate(30 23 30)"/></svg>',
+    hoops: '<svg viewBox="0 0 64 64"><rect x="12" y="4" width="40" height="26" rx="3" fill="#eef4ff" stroke="#1c1a2b" stroke-width="3"/><rect x="24" y="12" width="16" height="12" fill="none" stroke="#e8482f" stroke-width="2.5"/><path d="M20 30l4 14h16l4-14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 44l4-14M32 44V30M40 44l-4-14" stroke="#fff" stroke-width="2"/><ellipse cx="32" cy="30" rx="13" ry="3.5" fill="none" stroke="#f07a1f" stroke-width="3.5"/><circle cx="48" cy="48" r="11" fill="#f07a1f" stroke="#1c1a2b" stroke-width="3"/><path d="M37 48h22M48 37v22M41 40q5 8 0 16M55 40q-5 8 0 16" fill="none" stroke="#1c1a2b" stroke-width="2"/></svg>',
+    bubpanda: '<svg viewBox="0 0 64 64"><rect x="4" y="50" width="56" height="8" rx="3" fill="#6fbf3f" stroke="#1c1a2b" stroke-width="2.5"/><circle cx="20" cy="40" r="9" fill="#fff" stroke="#1c1a2b" stroke-width="2.5"/><circle cx="13" cy="32" r="3.5" fill="#1f1d2a"/><circle cx="27" cy="32" r="3.5" fill="#1f1d2a"/><ellipse cx="17" cy="40" rx="2.6" ry="3.2" fill="#1f1d2a"/><ellipse cx="24" cy="40" rx="2.6" ry="3.2" fill="#1f1d2a"/><circle cx="44" cy="22" r="14" fill="rgba(120,220,255,.25)" stroke="#4fc3ff" stroke-width="3"/><ellipse cx="44" cy="24" rx="7" ry="6" fill="#9b6bff" stroke="#1c1a2b" stroke-width="2"/><circle cx="45" cy="22" r="2.6" fill="#fff"/><ellipse cx="38" cy="15" rx="3.5" ry="2" fill="#fff" opacity=".8"/></svg>',
+    bubbles: '<svg viewBox="0 0 64 64"><path d="M30 60V26" stroke="#e9e4ff" stroke-width="3" stroke-dasharray="4 3"/><path d="M30 14l-6 10h12z" fill="#ffc93d" stroke="#1c1a2b" stroke-width="2.5" stroke-linejoin="round"/><circle cx="44" cy="20" r="14" fill="#ff5a6e" stroke="#1c1a2b" stroke-width="3"/><ellipse cx="39" cy="15" rx="4" ry="2.5" fill="#fff" opacity=".8"/><circle cx="14" cy="40" r="8" fill="#4fc3ff" stroke="#1c1a2b" stroke-width="3"/><circle cx="50" cy="48" r="6" fill="#3ee08f" stroke="#1c1a2b" stroke-width="3"/></svg>',
     race: '<svg viewBox="0 0 64 64"><rect x="4" y="40" width="56" height="16" rx="3" fill="#d65a3a" stroke="#1c1a2b" stroke-width="3"/><path d="M4 48h56" stroke="#fff" stroke-width="2"/><path d="M50 40v16" stroke="#fff" stroke-width="3" stroke-dasharray="3 3"/><path d="M26 30l-6 10M30 30l8 9" stroke="#1c1a2b" stroke-width="4" stroke-linecap="round"/><rect x="22" y="17" width="11" height="15" rx="4" fill="#ffc93d" stroke="#1c1a2b" stroke-width="3" transform="rotate(15 27 24)"/><circle cx="31" cy="11" r="6" fill="#ffd9b3" stroke="#1c1a2b" stroke-width="3"/><path d="M10 20h8M6 26h9M12 32h6" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
     trail: '<svg viewBox="0 0 64 64"><path d="M14 4L4 26h20z" fill="#3f8a4a" stroke="#1c1a2b" stroke-width="2.5" stroke-linejoin="round"/><path d="M50 2l-9 20h18z" fill="#2f7a3f" stroke="#1c1a2b" stroke-width="2.5" stroke-linejoin="round"/><path d="M2 58c10-6 50-6 60 0" fill="#c89a5e" stroke="#1c1a2b" stroke-width="3"/><rect x="34" y="44" width="24" height="10" rx="5" fill="#8b5a2b" stroke="#1c1a2b" stroke-width="3"/><ellipse cx="53" cy="49" rx="3" ry="4" fill="#e1b47a" stroke="#1c1a2b" stroke-width="2"/><path d="M18 34l-6 6M22 34l7 5" stroke="#1c1a2b" stroke-width="4" stroke-linecap="round"/><rect x="15" y="20" width="10" height="14" rx="4" fill="#ffc93d" stroke="#1c1a2b" stroke-width="3" transform="rotate(18 20 27)"/><circle cx="24" cy="15" r="5.5" fill="#ffd9b3" stroke="#1c1a2b" stroke-width="3"/><path d="M30 30q6-10 12 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 3"/></svg>',
     panda: '<svg viewBox="0 0 64 64"><path d="M8 2q6 14 22 20" fill="none" stroke="#3e8a2a" stroke-width="3.5" stroke-linecap="round"/><circle cx="22" cy="24" r="6" fill="#1f1d2a"/><circle cx="44" cy="24" r="6" fill="#1f1d2a"/><circle cx="33" cy="37" r="16" fill="#fff" stroke="#1c1a2b" stroke-width="3"/><ellipse cx="26" cy="36" rx="4.5" ry="6" fill="#1f1d2a" transform="rotate(30 26 36)"/><ellipse cx="40" cy="36" rx="4.5" ry="6" fill="#1f1d2a" transform="rotate(-30 40 36)"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="41" cy="35" r="1.6" fill="#fff"/><ellipse cx="33" cy="44" rx="3" ry="2" fill="#1f1d2a"/><rect x="50" y="30" width="6" height="30" rx="2" fill="#7cc84a" stroke="#1c1a2b" stroke-width="2.5"/><path d="M50 40h6M50 50h6" stroke="#3d7a24" stroke-width="2"/><path d="M56 32q6-4 7 2" fill="#5fb83a"/></svg>',
@@ -405,6 +410,16 @@
       return b;
     }));
   }
+  // αν η αριστερή στήλη του μενού δεν χωράει στην οθόνη (πολλά παιχνίδια / μεγάλη περιγραφή), μικραίνει λίγο
+  function fitLobby() {
+    const el = document.querySelector('.lobby-left');
+    if (!el) return;
+    el.style.zoom = '';
+    const h = el.scrollHeight, max = innerHeight * 0.95;
+    if (h > max) el.style.zoom = Math.max(0.75, max / h).toFixed(3);
+  }
+  addEventListener('resize', () => fitLobby());
+
   function pickGame(id) {
     if (!TVP.GAMES.some((g) => g.id === id)) return;
     const had = document.activeElement && document.activeElement.classList.contains('game');
@@ -416,6 +431,7 @@
     $('#gHow').textContent = m.how;
     $('#btnCups').hidden = id !== 'cups';
     renderGames();
+    fitLobby();
     if (had) $('#games .game.sel').focus();
     if (S.phase === 'over') $('#btnAgain').textContent = `Ξανά: ${m.title}`;
     broadcast();

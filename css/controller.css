@@ -61,6 +61,15 @@ input:focus { outline: none; border-color: #ffc93d; }
 #scrPad.tomato .target { display: none; }
 #scrPad.tomato #ball { background: radial-gradient(circle at 35% 30%, #ffb3a3 0 10%, #ef3b2f 45%, #a8150f 100%); border-radius: 50% 50% 48% 48%; }
 #scrPad.tomato #ball::after { content: ''; position: absolute; left: 50%; top: -6px; width: 30px; height: 16px; margin-left: -15px; background: #3aa64a; clip-path: polygon(50% 100%, 0 20%, 30% 45%, 50% 0, 70% 45%, 100% 20%); }
+#scrPad.hoops #pad { background: repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 22px, transparent 22px 44px), linear-gradient(180deg, #1d2b5e 0%, #c98b4e 55%, #e6ac6a 100%); }
+#scrPad.hoops .target { display: none; }
+#scrPad.hoops #ball {
+  background:
+    linear-gradient(90deg, transparent 47%, #2a160a 47% 53%, transparent 53%),
+    linear-gradient(0deg, transparent 47%, #2a160a 47% 53%, transparent 53%),
+    radial-gradient(circle at 35% 30%, #ffb066 0 12%, #f07a1f 55%, #b44d0c 100%);
+  border: 3px solid #2a160a;
+}
 #pad.off { opacity: .55; }
 #ball.fly { transition: transform .35s cubic-bezier(.3,.6,.4,1), opacity .35s; opacity: 0; }
 #ball.back { transition: transform .25s ease-out; }
@@ -132,6 +141,20 @@ input:focus { outline: none; border-color: #ffc93d; }
 .run-btn.jump { background: linear-gradient(180deg, #a6f08a 0%, #43b84a 45%, #237a2c 100%); box-shadow: 0 10px 0 #17521d; }
 .run-btn.hit { animation: hit .12s ease-out; }
 #scrRun.off .run-btn { filter: grayscale(.85) brightness(.7); }
+
+/* ◀ ▶ + ΑΛΜΑ + ΦΟΥΣΚΑ (Φουσκοπάντα): αριστερός αντίχειρας βελάκια, δεξιός τα κουμπιά */
+.plat-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1.25fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 6px 10px 14px; }
+.plat-btn {
+  border-radius: 24px; border: 5px solid #1c1a2b; color: #fff; display: flex; align-items: center; justify-content: center;
+  font: 800 clamp(18px, 5.6vw, 34px) 'Noto Sans', sans-serif; text-shadow: 0 3px 0 rgba(0,0,0,.35);
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.plat-btn.arrow { grid-row: 1 / 3; font-size: clamp(34px, 11vw, 64px); background: linear-gradient(180deg, #8f86b8 0%, #5b5290 45%, #39306a 100%); box-shadow: 0 9px 0 #241d4a; }
+.plat-btn.arrow.down { transform: translateY(6px); box-shadow: 0 3px 0 #241d4a; filter: brightness(1.25); }
+.plat-btn.jump { background: linear-gradient(180deg, #a6f08a 0%, #43b84a 45%, #237a2c 100%); box-shadow: 0 9px 0 #17521d; }
+.plat-btn.shoot { background: radial-gradient(circle at 35% 30%, #d9f6ff 0%, #4fc3ff 45%, #1d6fb0 100%); box-shadow: 0 9px 0 #134a78; }
+.plat-btn.hit { animation: hit .12s ease-out; }
+#scrPlat.off .plat-btn { filter: grayscale(.85) brightness(.7); }
 
 .fx-msg {
   position: fixed; left: 16px; right: 16px; top: 34%; text-align: center; pointer-events: none;

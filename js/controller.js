@@ -13,7 +13,7 @@
 
   let peer = null, conn = null, code = '', name = '', joined = false, st = null, retry = 0;
 
-  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrRun', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
+  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrRun', '#scrPlat', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
   const sendMsg = (m) => { if (conn && conn.open) try { conn.send(m); } catch (e) {} };
   function setConn(ok, t) { const c = $('#conn'); c.textContent = t; c.classList.toggle('ok', !!ok); }
 
@@ -121,12 +121,14 @@
     $('#btnStart').textContent = s.phase === 'over' ? 'Ξανά' : 'Έναρξη παιχνιδιού';
 
     const tossMode = s.phase === 'play' && s.ctrl && s.ctrl.mode === 'throw';
-    $('#scrPad').classList.toggle('tomato', tossMode);
+    const skin = tossMode ? s.ctrl.skin || 'tomato' : '';
+    $('#scrPad').classList.toggle('tomato', skin === 'tomato');
+    $('#scrPad').classList.toggle('hoops', skin === 'hoops');
     if (tossMode) {
       if ($('#scrPad').hidden) { show('#scrPad'); resetBall(); vibrate(40); }
       $('#padName').textContent = s.me.name;
-      $('#padLeft').textContent = s.score ? `Πετυχημένες: ${s.score.v}/${s.score.of}` : '';
-      $('#padHint').innerHTML = s.ctrl.active ? 'Σύρε τη ντομάτα προς τα πάνω<br><small>όσο πιο ψηλά, τόσο πιο ψηλά στον Μητσοτάκη · λοξά για στόχευση</small>' : s.ctrl.label;
+      $('#padLeft').textContent = s.ctrl.scoreText || (s.score ? `Πετυχημένες: ${s.score.v}/${s.score.of}` : '');
+      $('#padHint').innerHTML = s.ctrl.active ? s.ctrl.hint || 'Σύρε τη ντομάτα προς τα πάνω<br><small>όσο πιο ψηλά, τόσο πιο ψηλά στον Μητσοτάκη · λοξά για στόχευση</small>' : s.ctrl.label;
       $('#pad').classList.toggle('off', !s.ctrl.active);
       return;
     }
@@ -148,6 +150,8 @@
       $('#joyMsg').textContent = s.ctrl.active ? '' : (s.ctrl.label || '');
       $('#joySub').textContent = s.ctrl.active ? 'Σύρε τον κύκλο για να κινηθείς' : (s.ctrl.sub || '');
       $('#scrJoy').classList.toggle('off', !s.ctrl.active);
+      dashBtn.textContent = s.ctrl.btn || 'ΩΘΗΣΗ';
+      dashCd = s.ctrl.cdMs || 1400;
       if (!s.ctrl.active) joyReset();
       return;
     }
@@ -158,6 +162,14 @@
       $('#scrRun').classList.toggle('off', !s.ctrl.active);
       $('#runBtn small').textContent = s.ctrl.runHint || 'πάτα γρήγορα';
       $('#jumpBtn small').textContent = s.ctrl.jumpHint || 'πριν το εμπόδιο';
+      return;
+    }
+    if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'plat') {
+      if ($('#scrPlat').hidden) { show('#scrPlat'); vibrate(30); }
+      $('#platScore').textContent = s.ctrl.scoreText || '';
+      $('#platMsg').textContent = s.ctrl.label || '';
+      $('#platSub').textContent = s.ctrl.sub || '';
+      $('#scrPlat').classList.toggle('off', !s.ctrl.active);
       return;
     }
     if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'choice') {
@@ -204,6 +216,39 @@
     b.addEventListener('contextmenu', (e) => e.preventDefault());
   });
 
+
+  // ---------- ◀ ▶ + ΑΛΜΑ + ΦΟΥΣΚΑ (Φουσκοπάντα) ----------
+  // τα βελάκια στέλνουν την κατεύθυνση όσο είναι πατημένα (και ξανά κάθε 400ms, μήπως χαθεί μήνυμα)
+  const held = { L: new Set(), R: new Set() };
+  let platDir = 0, platTimer = null;
+  function platSend() {
+    const d = (held.R.size ? 1 : 0) - (held.L.size ? 1 : 0);
+    if (d !== platDir) { platDir = d; sendMsg({ type: 'move', d }); }
+    clearInterval(platTimer);
+    if (d) platTimer = setInterval(() => sendMsg({ type: 'move', d: platDir }), 400);
+  }
+  [['#platL', 'L'], ['#platR', 'R']].forEach(([sel, k]) => {
+    const b = $(sel);
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { b.setPointerCapture(e.pointerId); } catch (er) {}
+      held[k].add(e.pointerId); b.classList.add('down'); platSend(); vibrate(8);
+    });
+    const up = (e) => { held[k].delete(e.pointerId); if (!held[k].size) b.classList.remove('down'); platSend(); };
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
+  [['#platJump', 'jump', 15], ['#platShoot', 'dash', 25]].forEach(([sel, type, vib]) => {
+    const b = $(sel);
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      sendMsg({ type });
+      b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+      vibrate(vib);
+    });
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
+
   // ---------- joystick + ορμή (Σπρωξίματα) ----------
   const joy = $('#joy'), knob = $('#knob'), dashBtn = $('#dashBtn');
   let jd = null, lastJoy = 0, jv = { x: 0, y: 0 }, joyTimer = null;
@@ -236,15 +281,15 @@
   joy.addEventListener('pointermove', (e) => { if (e.pointerId === jd) joyMove(e); });
   joy.addEventListener('pointerup', (e) => { if (e.pointerId === jd) joyReset(); });
   joy.addEventListener('pointercancel', (e) => { if (e.pointerId === jd) joyReset(); });
-  let dashReady = 0;
+  let dashReady = 0, dashCd = 1400;
   dashBtn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     if ($('#scrJoy').classList.contains('off') || performance.now() < dashReady) return;
-    dashReady = performance.now() + 1400;
+    dashReady = performance.now() + dashCd;
     sendMsg({ type: 'dash' });
     vibrate(35);
     dashBtn.classList.add('cool');
-    setTimeout(() => dashBtn.classList.remove('cool'), 1400);
+    setTimeout(() => dashBtn.classList.remove('cool'), dashCd);
   });
 
   // ---------- 4 απαντήσεις («Ποιος είναι;») ----------

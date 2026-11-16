@@ -9,10 +9,11 @@ canvas#stage, canvas#stage2 { position: fixed; inset: 0; width: 100vw; height: 1
 
 .games { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1vh; margin-bottom: 2.4vh; }
 .btn.game {
-  display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: .8vh; padding: .8vh 1vh; border-radius: 1.8vh;
+  display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: .8vh; padding: .55vh 1vh; border-radius: 1.8vh;
   font-size: 1.95vh; background: rgba(255,255,255,.07); text-align: left; line-height: 1.15; min-width: 0;
 }
-.btn.game svg { width: 4.2vh; height: 4.2vh; flex: none; }
+.btn.game svg { width: 3.8vh; height: 3.8vh; flex: none; }
+.btn.game span { hyphens: manual; overflow-wrap: normal; }
 .btn.game.sel { background: rgba(255,201,61,.16); border-color: #ffc93d; color: #ffe8a8; }
 
 /* ---------- lobby ---------- */
@@ -21,9 +22,9 @@ canvas#stage, canvas#stage2 { position: fixed; inset: 0; width: 100vw; height: 1
   align-items: center; padding: 3vh 6vw;
   background: linear-gradient(90deg, rgba(13,7,38,.94) 0%, rgba(13,7,38,.82) 55%, rgba(13,7,38,.55) 100%);
 }
-h1 { font-family: 'Comfortaa', sans-serif; font-size: 5.6vh; line-height: 1.02; }
+h1 { font-family: 'Comfortaa', sans-serif; font-size: 5.2vh; line-height: 1.02; }
 h1 span { display: block; color: #ff4d5e; font-size: .72em; margin-top: .6vh; }
-.tag { font-size: 2.3vh; line-height: 1.45; color: #d9d3f2; margin: 1.4vh 0 1.4vh; max-width: 46em; min-height: 6.7vh; }
+.tag { font-size: 2.1vh; line-height: 1.4; color: #d9d3f2; margin: 1.2vh 0 1.2vh; max-width: 46em; min-height: 6.7vh; }
 .steps { list-style: none; counter-reset: s; display: grid; gap: 1vh; margin-bottom: 1.6vh; }
 .steps li { counter-increment: s; font-size: 2.3vh; display: flex; align-items: center; gap: 1.2vh; color: #fff; }
 .steps li::before {
