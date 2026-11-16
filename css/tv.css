@@ -1,0 +1,101 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #0d0726; color: #fff; font-family: 'Noto Sans', system-ui, sans-serif; }
+canvas#stage { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+[hidden] { display: none !important; }
+
+.brand { font-family: 'Comfortaa', sans-serif; font-weight: 700; font-size: 3.2vh; letter-spacing: .02em; }
+.brand span { color: #ffc93d; margin-left: .15em; }
+.brand.big { font-size: 4vh; margin-bottom: 1.5vh; }
+
+/* ---------- lobby ---------- */
+#lobby {
+  position: fixed; inset: 0; display: grid; grid-template-columns: 1.25fr 1fr; gap: 5vw;
+  align-items: center; padding: 6vh 6vw;
+  background: linear-gradient(90deg, rgba(13,7,38,.94) 0%, rgba(13,7,38,.82) 55%, rgba(13,7,38,.55) 100%);
+}
+h1 { font-family: 'Comfortaa', sans-serif; font-size: 8vh; line-height: 1.02; }
+h1 span { display: block; color: #ff4d5e; font-size: .72em; margin-top: .6vh; }
+.tag { font-size: 2.5vh; line-height: 1.45; color: #d9d3f2; margin: 2.4vh 0 2.2vh; max-width: 46em; }
+.steps { list-style: none; counter-reset: s; display: grid; gap: 1.1vh; margin-bottom: 3vh; }
+.steps li { counter-increment: s; font-size: 2.3vh; display: flex; align-items: center; gap: 1.2vh; color: #fff; }
+.steps li::before {
+  content: counter(s); width: 3.6vh; height: 3.6vh; border-radius: 50%; display: grid; place-items: center;
+  background: #ffc93d; color: #1b0f3a; font-weight: 800; flex: none;
+}
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.4vh; margin-bottom: 3vh; }
+.slot {
+  --c: #fff; border: 2px dashed rgba(255,255,255,.22); border-radius: 2vh; padding: 1.8vh 1vh; text-align: center;
+  opacity: .55; transition: .3s;
+}
+.slot.on { border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); opacity: 1; transform: translateY(-.4vh); }
+.cup-ico {
+  width: 5vh; height: 6vh; margin: 0 auto 1vh; background: var(--c);
+  clip-path: polygon(0 0, 100% 0, 82% 100%, 18% 100%); border-top: 1vh solid #fff;
+}
+.slot .nm { font-weight: 800; font-size: 2.1vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.actions { display: flex; flex-wrap: wrap; gap: 1.4vh; }
+.btn {
+  font: 800 2.4vh 'Noto Sans', sans-serif; color: #fff; background: rgba(255,255,255,.1);
+  border: 3px solid rgba(255,255,255,.25); border-radius: 99px; padding: 1.3vh 3.2vh; cursor: pointer; transition: .15s;
+}
+.btn.primary { background: #ff4d5e; border-color: #ff4d5e; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn:focus-visible, .btn:focus { outline: none; border-color: #ffc93d; box-shadow: 0 0 0 .6vh rgba(255,201,61,.45); transform: scale(1.05); }
+.hint { margin-top: 1.6vh; font-size: 2vh; color: #b9b0dc; }
+
+.lobby-right { display: flex; justify-content: center; }
+.qr-card {
+  background: #fff; color: #1b0f3a; border-radius: 3vh; padding: 3vh; text-align: center; width: min(46vh, 100%);
+  box-shadow: 0 2vh 6vh rgba(0,0,0,.5), 0 0 0 1vh rgba(255,201,61,.35);
+}
+#qr { aspect-ratio: 1; display: grid; place-items: center; }
+#qr img { width: 100%; height: 100%; image-rendering: pixelated; }
+.qr-wait { font-size: 2.4vh; color: #776d9a; }
+.code-label { font-size: 1.8vh; color: #5d5480; margin-top: 1.4vh; }
+#code { font: 800 7vh 'Noto Sans', sans-serif; letter-spacing: .18em; color: #1b0f3a; }
+#netStatus { font-size: 1.8vh; color: #c2185b; min-height: 2.2vh; }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+.hud-top { display: flex; justify-content: space-between; align-items: center; padding: 2.5vh 3vw; }
+.room { font-size: 2.2vh; background: rgba(0,0,0,.35); padding: .8vh 2vh; border-radius: 99px; }
+.room b { letter-spacing: .12em; color: #ffc93d; }
+#banner {
+  --c: #fff; position: absolute; left: 50%; top: 13vh; transform: translate(-50%, -10px) scale(.9); opacity: 0;
+  font: 800 6vh 'Comfortaa', sans-serif; color: var(--c); text-shadow: 0 .5vh 2vh rgba(0,0,0,.6); white-space: nowrap;
+  transition: .3s cubic-bezier(.2,1.6,.4,1);
+}
+#banner.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+#playersBar { position: absolute; left: 0; right: 0; bottom: 2.5vh; display: flex; justify-content: center; gap: 1.6vw; padding: 0 3vw; }
+.pl {
+  --c: #fff; background: rgba(10,5,30,.72); border: 2px solid rgba(255,255,255,.12); border-radius: 2vh;
+  padding: 1.2vh 2vh; min-width: 17vw; transition: .25s;
+}
+.pl.cur { border-color: var(--c); box-shadow: 0 0 3vh color-mix(in srgb, var(--c) 55%, transparent); transform: translateY(-.8vh); }
+.pl.off { opacity: .45; }
+.pl .nm { font-weight: 800; font-size: 2.3vh; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl .dots { display: flex; gap: .5vh; margin: .8vh 0 .4vh; flex-wrap: wrap; }
+.pl .dots i { width: 1.5vh; height: 1.5vh; border-radius: 50%; background: var(--c); }
+.pl .dots i.gone { background: rgba(255,255,255,.15); }
+.pl .lf { font-size: 1.7vh; color: #c9c2e6; }
+
+/* ---------- τέλος ---------- */
+#over { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,4,24,.6); }
+.over-card {
+  background: rgba(22,12,58,.95); border: 2px solid rgba(255,255,255,.15); border-radius: 3vh; padding: 4vh 6vh;
+  text-align: center; min-width: 50vh; animation: pop .5s cubic-bezier(.2,1.5,.4,1);
+}
+@keyframes pop { from { transform: scale(.7); opacity: 0; } }
+.trophy { font-size: 9vh; }
+.over-k { font-size: 2.2vh; text-transform: uppercase; letter-spacing: .2em; color: #b9b0dc; }
+#winName { font: 800 7vh 'Comfortaa', sans-serif; }
+#winStats { font-size: 2.2vh; color: #d9d3f2; margin-bottom: 2.5vh; }
+#rank { list-style: none; text-align: left; display: grid; gap: 1vh; margin-bottom: 3vh; }
+#rank li { display: flex; align-items: center; gap: 1.2vh; font-size: 2.2vh; }
+#rank .dot { width: 2vh; height: 2vh; border-radius: 50%; flex: none; }
+#rank .st { margin-left: auto; color: #b9b0dc; padding-left: 3vh; }
+.over-card .actions { justify-content: center; }
+
+@media (max-aspect-ratio: 1/1) {
+  #lobby { grid-template-columns: 1fr; overflow: auto; }
+}

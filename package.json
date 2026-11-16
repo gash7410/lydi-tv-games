@@ -1,0 +1,17 @@
+{
+  "name": "lydi-tv-games",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lydi TV Games — party παιχνίδια για Android TV με κινητά ως χειριστήρια",
+  "scripts": {
+    "build:www": "node scripts/build-www.mjs",
+    "sync": "npm run build:www && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/core": "8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.2"
+  }
+}

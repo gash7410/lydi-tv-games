@@ -1,0 +1,12 @@
+node_modules/
+www/
+signing/
+*.p12
+*.jks
+*.keystore
+*.pem
+.env
+loginkey*.txt
+CODE.txt
+code.txt
+*.key

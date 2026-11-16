@@ -1,0 +1,8 @@
+{
+  "appId": "gr.lydi.tvgames",
+  "appName": "Lydi TV Games",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#140a33"
+  }
+}

@@ -1,0 +1,68 @@
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  --c: #ff4d5e;
+  font-family: 'Noto Sans', system-ui, sans-serif; color: #fff; overflow: hidden; overscroll-behavior: none;
+  background: radial-gradient(120% 80% at 50% 0%, #2b1260 0%, #140a33 60%, #0b0520 100%);
+  display: flex; flex-direction: column; user-select: none; -webkit-user-select: none;
+}
+[hidden] { display: none !important; }
+.top { display: flex; justify-content: space-between; align-items: center; padding: max(12px, env(safe-area-inset-top)) 18px 10px; }
+.brand { font: 700 20px 'Comfortaa', sans-serif; }
+.brand span { color: #ffc93d; margin-left: 3px; }
+.conn { font-size: 12px; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,.1); color: #cfc8ea; }
+.conn.ok { background: rgba(61,220,132,.18); color: #7ff0b0; }
+
+.scr { flex: 1; display: flex; flex-direction: column; padding: 10px 22px 24px; min-height: 0; }
+h1 { font: 700 34px/1.1 'Comfortaa', sans-serif; margin: 18px 0 26px; }
+h1 span { color: #ff4d5e; font-size: .75em; }
+form { display: grid; gap: 16px; }
+label { display: grid; gap: 6px; font-size: 14px; color: #cfc8ea; }
+input {
+  font: 700 22px 'Noto Sans', sans-serif; color: #fff; background: rgba(255,255,255,.08);
+  border: 2px solid rgba(255,255,255,.18); border-radius: 14px; padding: 13px 16px; width: 100%;
+}
+input:focus { outline: none; border-color: #ffc93d; }
+#inCode { letter-spacing: .3em; }
+.btn {
+  font: 800 18px 'Noto Sans', sans-serif; color: #fff; background: rgba(255,255,255,.1);
+  border: 0; border-radius: 16px; padding: 16px; width: 100%; margin-top: 6px;
+}
+.btn.primary { background: var(--c); box-shadow: 0 6px 0 rgba(0,0,0,.25); }
+.btn:active { transform: translateY(3px); box-shadow: none; }
+.btn:disabled { opacity: .5; }
+.err { color: #ff8a95; font-size: 14px; min-height: 20px; }
+
+#scrWait { justify-content: center; align-items: center; text-align: center; gap: 14px; }
+.badge { padding: 22px 30px; border-radius: 24px; border: 3px solid var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.badge .cup { width: 58px; height: 70px; margin: 0 auto 10px; background: var(--c); clip-path: polygon(0 0, 100% 0, 82% 100%, 18% 100%); border-top: 12px solid #fff; }
+#myName { font: 700 28px 'Comfortaa', sans-serif; }
+#myColor { font-size: 14px; color: #cfc8ea; }
+.big-msg { font-size: 22px; font-weight: 800; margin-top: 8px; }
+.sub { color: #cfc8ea; font-size: 15px; line-height: 1.45; max-width: 320px; }
+#scrWait .btn { max-width: 340px; }
+
+.pad-scr { padding: 0 0 max(14px, env(safe-area-inset-bottom)); }
+.pad-info { display: flex; justify-content: space-between; align-items: baseline; padding: 0 20px 8px; }
+#padName { font-size: 18px; color: var(--c); }
+#padLeft { font-size: 14px; color: #cfc8ea; }
+#pad {
+  position: relative; flex: 1; margin: 0 12px; border-radius: 26px; overflow: hidden; touch-action: none;
+  background: linear-gradient(180deg, #0b2c49 0%, #155d8a 100%); border: 3px solid var(--c);
+}
+.target { position: absolute; top: 7%; left: 50%; transform: translateX(-50%); opacity: .5; }
+.tri { width: 120px; height: 90px; background: repeating-radial-gradient(circle at 50% 50%, var(--c) 0 9px, transparent 9px 16px); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+#ball {
+  position: absolute; left: 50%; bottom: 14%; width: 74px; height: 74px; margin-left: -37px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, #ffe2bd 45%, #f08a2c 100%);
+  box-shadow: 0 10px 22px rgba(0,0,0,.45); will-change: transform;
+}
+#ball.fly { transition: transform .35s cubic-bezier(.3,.6,.4,1), opacity .35s; opacity: 0; }
+#ball.back { transition: transform .25s ease-out; }
+#meter { position: absolute; right: 12px; top: 18%; bottom: 18%; width: 12px; border-radius: 6px; background: rgba(255,255,255,.15); }
+#meterFill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; border-radius: 6px; background: linear-gradient(0deg, #3ddc84, #ffc93d 55%, #ff4d5e); }
+.pad-hint { position: absolute; left: 0; right: 0; bottom: 3%; text-align: center; font-weight: 800; font-size: 15px; line-height: 1.35; pointer-events: none; }
+.pad-hint small { font-weight: 400; color: #cfe6f7; font-size: 12px; }
+
+#flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: var(--c); transition: opacity .5s; }
+#flash.on { opacity: .55; transition: none; }

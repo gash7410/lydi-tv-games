@@ -1,0 +1,76 @@
+name: Build APK (Android TV)
+
+# Κάθε push στο main φτιάχνει την εφαρμογή Android TV και αντικαθιστά το LydiTVGames.apk
+# στη release «latest». Σταθερό link για Downloader / Obtainium:
+# https://github.com/gash7410/lydi-tv-games/releases/latest/download/LydiTVGames.apk
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # versionCode = αριθμός commits
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Capacitor sync
+        run: |
+          npm ci --ignore-scripts --include=dev
+          npm run sync
+
+      # Σταθερό κλειδί από τα secrets: χωρίς αυτό η τηλεόραση δεν δέχεται ενημέρωση πάνω στην παλιά έκδοση.
+      - name: Signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "Λείπει το secret KEYSTORE_BASE64"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/lydi-release.p12"
+
+      - name: Build APK
+        working-directory: android
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/lydi-release.p12
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          export VERSION_CODE=$(git rev-list --count HEAD)
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Check the signing key
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          DIGEST=$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
+          echo "Signed with $DIGEST"
+          test "$DIGEST" = "586a7be77f2b7e778e0e4f1bdb3cef707c94b4a46f4c299a92bfa55e142a45b1" || { echo "Λάθος κλειδί υπογραφής: η TV θα αρνηθεί την ενημέρωση"; exit 1; }
+
+      - name: Publish to the "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="1.0.$(git rev-list --count HEAD)"
+          cp android/app/build/outputs/apk/release/app-release.apk LydiTVGames.apk
+          gh release view latest >/dev/null 2>&1 || \
+            gh release create latest --title "Lydi TV Games" --notes "Η τελευταία έκδοση του Lydi TV Games."
+          gh release upload latest LydiTVGames.apk --clobber
+          gh release edit latest --title "Lydi TV Games $VERSION" \
+            --notes "Έκδοση $VERSION ($(git log -1 --format=%cd --date=format:'%d/%m/%Y %H:%M')). Στην Android TV: Downloader → https://github.com/gash7410/lydi-tv-games/releases/latest/download/LydiTVGames.apk"

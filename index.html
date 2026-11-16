@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lydi TV Games — Μπαλάκι στα ποτηράκια</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tv.css">
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-top">
+    <div class="brand">Lydi<span>TV Games</span></div>
+    <div class="room">Δωμάτιο <b id="hudCode">····</b></div>
+  </div>
+  <div id="banner"></div>
+  <div id="playersBar"></div>
+</div>
+
+<section id="lobby">
+  <div class="lobby-left">
+    <div class="brand big">Lydi<span>TV Games</span></div>
+    <h1>Μπαλάκι <span>στα ποτηράκια</span></h1>
+    <p class="tag">Πέτα το μπαλάκι από το κινητό σου. Αν μπει στο ποτηράκι, εξαφανίζεται. Όποιος τα καθαρίσει πρώτος κερδίζει. Από 1 έως 4 παίκτες.</p>
+    <ol class="steps">
+      <li>Σκάναρε τον QR με την κάμερα του κινητού</li>
+      <li>Γράψε το όνομά σου και μπες</li>
+      <li>Σύρε το μπαλάκι προς τα πάνω και άφησέ το</li>
+    </ol>
+    <div class="slots" id="slots"></div>
+    <div class="actions">
+      <button id="btnStart" class="btn primary" disabled>Έναρξη</button>
+      <button id="btnCups" class="btn">Ποτηράκια: 10</button>
+      <button id="btnFull" class="btn">Πλήρης οθόνη</button>
+    </div>
+    <p class="hint" id="startHint"></p>
+  </div>
+  <div class="lobby-right">
+    <div class="qr-card">
+      <div id="qr"><div class="qr-wait">Φόρτωση…</div></div>
+      <div class="code-label">ή άνοιξε το χειριστήριο και γράψε τον κωδικό</div>
+      <div id="code">····</div>
+      <div id="netStatus"></div>
+    </div>
+  </div>
+</section>
+
+<section id="over" hidden>
+  <div class="over-card">
+    <div class="trophy">🏆</div>
+    <div class="over-k">Νικητής</div>
+    <div id="winName"></div>
+    <div id="winStats"></div>
+    <ol id="rank"></ol>
+    <div class="actions">
+      <button id="btnAgain" class="btn primary">Ξανά</button>
+      <button id="btnLobby" class="btn">Νέοι παίκτες</button>
+    </div>
+  </div>
+</section>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="js/common.js"></script>
+<script src="js/game-cups.js"></script>
+<script src="js/tv.js"></script>
+</body>
+</html>

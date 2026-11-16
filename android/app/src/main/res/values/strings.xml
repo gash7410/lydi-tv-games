@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lydi TV Games</string>
+    <string name="title_activity_main">Lydi TV Games</string>
+    <string name="package_name">gr.lydi.tvgames</string>
+    <string name="custom_url_scheme">gr.lydi.tvgames</string>
+</resources>
