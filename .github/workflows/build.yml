@@ -72,5 +72,9 @@ jobs:
           gh release view latest >/dev/null 2>&1 || \
             gh release create latest --title "Lydi TV Games" --notes "Η τελευταία έκδοση του Lydi TV Games."
           gh release upload latest LydiTVGames.apk --clobber
+          # το κουμπί «Ενημέρωση» της εφαρμογής διαβάζει αυτό (ανεβαίνει μετά το APK, ώστε να μη δείχνει έκδοση που λείπει)
+          printf '{"code":%s,"name":"%s","date":"%s","sha":"%s"}\n' "$(git rev-list --count HEAD)" "$VERSION" \
+            "$(git log -1 --format=%cd --date=format:'%d/%m/%Y %H:%M')" "$(git rev-parse --short HEAD)" > version.json
+          gh release upload latest version.json --clobber
           gh release edit latest --title "Lydi TV Games $VERSION" \
             --notes "Έκδοση $VERSION ($(git log -1 --format=%cd --date=format:'%d/%m/%Y %H:%M')). Στην Android TV: Downloader → https://github.com/gash7410/lydi-tv-games/releases/latest/download/LydiTVGames.apk"

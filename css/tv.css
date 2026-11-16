@@ -108,3 +108,10 @@ h1 span { display: block; color: #ff4d5e; font-size: .72em; margin-top: .6vh; }
 @media (max-aspect-ratio: 1/1) {
   #lobby { grid-template-columns: 1fr; overflow: auto; }
 }
+
+/* κουμπί «Ενημέρωση» (εφαρμογή Android TV) */
+.btn.upd-new { background: #2ecc71; border-color: #2ecc71; color: #10301c; }
+.upd-msg:empty { display: none; }
+.upd-msg.ok { color: #9be7b4; }
+.upd-msg.warn { color: #ffd76a; }
+.upd-msg.err { color: #ff9a9a; }
