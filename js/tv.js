@@ -135,7 +135,7 @@
       case 'lobby': if (p && isHost(p) && S.phase === 'over') toLobby(); return;
       case 'pick': if (p && isHost(p) && (S.phase === 'lobby' || S.phase === 'over')) pickGame(d.game); return;
       case 'pong': if (p && typeof d.t === 'number') { const r = performance.now() - d.t; if (r >= 0 && r < 3000) p.rtt = p.rtt == null ? r : p.rtt * 0.7 + r * 0.3; } return;
-      case 'tap': case 'joy': case 'dash': case 'ans': case 'toss':
+      case 'tap': case 'jump': case 'joy': case 'dash': case 'ans': case 'toss':
         if (p && mini && S.phase === 'play') mini.input(partOf(p), d, performance.now());
         return;
       case 'aim': if (p && isTurn(p)) game.setAim(d.ax, d.p); return;
