@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lydi TV Games · Έλεγχος τηλεόρασης</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.4 system-ui, sans-serif; background: #15131f; color: #eee; padding: 12px; max-width: 980px; margin-inline: auto; }
+  h1 { font-size: 18px; margin: 0 0 10px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+  input { font: inherit; padding: 10px; width: 7em; border-radius: 8px; border: 1px solid #555; background: #222; color: #fff; text-align: center; letter-spacing: .2em; }
+  button { font: inherit; padding: 10px 14px; border-radius: 8px; border: 0; background: #34305a; color: #fff; }
+  button.pri { background: #ffc93d; color: #1c1a2b; font-weight: 700; }
+  button:disabled { opacity: .4; }
+  #st { font-size: 13px; color: #aaa; }
+  #shot { width: 100%; border-radius: 8px; background: #000; display: block; aspect-ratio: 16/9; object-fit: contain; }
+  .keys { display: grid; grid-template-columns: repeat(3, 56px); gap: 6px; }
+  .keys button { padding: 12px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td { border-bottom: 1px solid #2c2940; padding: 4px 6px; vertical-align: top; word-break: break-word; }
+  td:first-child { color: #aaa; white-space: nowrap; width: 1%; }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background: #0d0c14; padding: 8px; border-radius: 8px; max-height: 50vh; overflow: auto; margin: 0; }
+  .e { color: #ff7b72; } .w { color: #f2cc60; }
+  section { background: #1d1a2c; border-radius: 10px; padding: 10px; margin: 10px 0; }
+  h2 { font-size: 14px; margin: 0 0 6px; color: #ffc93d; }
+</style>
+</head>
+<body>
+<h1>📺 Έλεγχος τηλεόρασης</h1>
+<div class="row">
+  <label>Κωδικός δωματίου <input id="code" inputmode="numeric" maxlength="4" placeholder="····"></label>
+  <button id="go" class="pri">Σύνδεση</button>
+  <span id="st">Γράψε τον κωδικό που δείχνει η τηλεόραση.</span>
+</div>
+
+<section>
+  <h2>Οθόνη</h2>
+  <img id="shot" alt="Στιγμιότυπο τηλεόρασης">
+  <div class="row">
+    <button data-c="shot" disabled>📷 Στιγμιότυπο</button>
+    <label><input type="checkbox" id="auto" style="width:auto"> αυτόματα κάθε 3″</label>
+    <span id="shotInfo" style="font-size:12px;color:#888"></span>
+  </div>
+  <div class="row">
+    <div class="keys">
+      <span></span><button data-k="ArrowUp" disabled>▲</button><span></span>
+      <button data-k="ArrowLeft" disabled>◀</button><button data-k="Enter" disabled>OK</button><button data-k="ArrowRight" disabled>▶</button>
+      <span></span><button data-k="ArrowDown" disabled>▼</button><span></span>
+    </div>
+    <button data-c="reload" disabled>↻ Επανεκκίνηση σελίδας</button>
+  </div>
+</section>
+
+<section>
+  <h2>Πληροφορίες</h2>
+  <div class="row"><button data-c="info" disabled>Ανανέωση</button></div>
+  <table id="info"></table>
+</section>
+
+<section>
+  <h2>Σφάλματα και προειδοποιήσεις</h2>
+  <div class="row"><button data-c="logs" disabled>Ανανέωση</button></div>
+  <pre id="logs">—</pre>
+</section>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/common.js"></script>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  let peer = null, conn = null, seq = 0, autoT = null, shotBusy = false;
+  const q = new URLSearchParams(location.search).get('r');
+  if (q) $('#code').value = q;
+  const st = (t) => { $('#st').textContent = t; };
+  const enable = (on) => document.querySelectorAll('[data-c],[data-k]').forEach((b) => { b.disabled = !on; });
+
+  function cmd(c, extra) {
+    if (!conn || !conn.open) return;
+    if (c === 'shot') { if (shotBusy) return; shotBusy = true; setTimeout(() => { shotBusy = false; }, 8000); }
+    conn.send(Object.assign({ type: 'dbg', cmd: c, id: ++seq }, extra || {}));
+  }
+
+  function connect() {
+    const code = $('#code').value.trim();
+    if (!/^\d{4}$/.test(code)) return st('Ο κωδικός είναι 4 ψηφία.');
+    if (peer) peer.destroy();
+    enable(false); st('Σύνδεση…');
+    peer = new Peer(TVP.peerOptions);
+    peer.on('open', () => {
+      conn = peer.connect(TVP.PREFIX + code, { reliable: true });
+      conn.on('open', () => {
+        st('Συνδέθηκε στο δωμάτιο ' + code + '.'); enable(true);
+        history.replaceState(null, '', '?r=' + code);
+        cmd('info'); cmd('logs'); cmd('shot');
+      });
+      conn.on('data', onData);
+      conn.on('close', () => { st('Η σύνδεση έκλεισε.'); enable(false); });
+    });
+    peer.on('error', (e) => st(e.type === 'peer-unavailable' ? 'Δεν βρέθηκε τηλεόραση με αυτόν τον κωδικό.' : 'Σφάλμα: ' + e.type));
+  }
+
+  function onData(d) {
+    if (!d || d.type !== 'dbg') return; // αγνοεί ping κ.λπ.
+    if (d.error) st('Σφάλμα τηλεόρασης: ' + d.error);
+    if (d.info) {
+      const i = d.info, v = i.version || {};
+      const rows = [
+        ['Έκδοση', v.code === 'web' ? 'site (GitHub Pages)' : `1.0.${v.code}` + (v.sha ? ` · ${v.sha}` : '') + (v.date ? ` · ${new Date(v.date).toLocaleString('el-GR')}` : '')],
+        ['Εφαρμογή', i.app ? 'ναι (Android TV)' : 'όχι (browser)'],
+        ['Οθόνη', `${i.screen} · παράθυρο ${i.view} · dpr ${i.dpr}`],
+        ['Φάση', `${i.phase || '—'} · παιχνίδι ${i.game || '—'}${i.mini ? ' (παίζεται: ' + i.mini + ')' : ''}`],
+        ['Ορατά', (i.visible || []).join(', ')],
+        ['Εστίαση', i.focus || '—'],
+        ['Παίκτες', i.players.length ? i.players.map((p) => `${p.name}${p.connected ? '' : ' (εκτός)'}${p.rtt != null ? ' ' + p.rtt + 'ms' : ''}`).join(', ') : '—'],
+        ['Σφάλματα', String(i.errors)],
+        ['Σε λειτουργία', i.uptime + ' δευτ.' + (i.mem ? ' · μνήμη ' + i.mem : '') + (i.online ? '' : ' · ΧΩΡΙΣ internet')],
+        ['Browser', i.ua],
+      ];
+      $('#info').replaceChildren(...rows.map(([k, val]) => {
+        const tr = document.createElement('tr');
+        tr.append(Object.assign(document.createElement('td'), { textContent: k }), Object.assign(document.createElement('td'), { textContent: val }));
+        return tr;
+      }));
+    }
+    if (d.logs) {
+      const pre = $('#logs'); pre.replaceChildren();
+      if (!d.logs.length) pre.textContent = 'Κανένα σφάλμα 👍';
+      for (const l of d.logs) {
+        const s = document.createElement('div'); s.className = l.level === 'error' ? 'e' : 'w';
+        s.textContent = `[${l.t}s] ${l.level === 'error' ? '✖' : '⚠'} ${l.msg}`; pre.append(s);
+      }
+    }
+    if (d.shot) {
+      shotBusy = false;
+      $('#shot').src = d.shot.data;
+      $('#shotInfo').textContent = `${d.shot.w}×${d.shot.h} · ${d.shot.mode === 'dom' ? 'πλήρες' : 'μόνο καμβάς'} · ${new Date().toLocaleTimeString('el-GR')}`;
+    }
+  }
+
+  $('#go').addEventListener('click', connect);
+  $('#code').addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
+  document.querySelectorAll('[data-c]').forEach((b) => b.addEventListener('click', () => cmd(b.dataset.c)));
+  document.querySelectorAll('[data-k]').forEach((b) => b.addEventListener('click', () => { cmd('key', { key: b.dataset.k }); setTimeout(() => { cmd('shot'); cmd('info'); }, 350); }));
+  $('#auto').addEventListener('change', (e) => {
+    clearInterval(autoT);
+    if (e.target.checked) autoT = setInterval(() => cmd('shot'), 3000);
+  });
+  if (q) connect();
+})();
+</script>
+</body>
+</html>

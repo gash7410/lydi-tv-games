@@ -127,6 +127,7 @@
 
   function onMsg(conn, d) {
     if (!d || typeof d !== 'object') return;
+    if (d.type === 'dbg') return window.TVDBG && TVDBG.handle(conn, d);
     const p = byConn.get(conn);
     switch (d.type) {
       case 'join': return join(conn, d);
