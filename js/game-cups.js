@@ -64,8 +64,7 @@
       const loop = (t) => {
         const dt = Math.min(0.05, (t - this.last) / 1000);
         this.last = t;
-        this.update(dt);
-        this.draw();
+        if (!this.paused) { this.update(dt); this.draw(); } // σε παύση όσο τρέχει άλλο παιχνίδι
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);

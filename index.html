@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lydi TV Games — Μπαλάκι στα ποτηράκια</title>
+<title>Lydi Show TV Games</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -12,10 +12,11 @@
 </head>
 <body>
 <canvas id="stage"></canvas>
+<canvas id="stage2" hidden></canvas>
 
 <div id="hud" hidden>
   <div class="hud-top">
-    <div class="brand">Lydi<span>TV Games</span></div>
+    <div class="brand">Lydi Show<span>TV Games</span></div>
     <div class="room">Δωμάτιο <b id="hudCode">····</b></div>
   </div>
   <div id="banner"></div>
@@ -24,13 +25,13 @@
 
 <section id="lobby">
   <div class="lobby-left">
-    <div class="brand big">Lydi<span>TV Games</span></div>
-    <h1>Μπαλάκι <span>στα ποτηράκια</span></h1>
-    <p class="tag">Πέτα το μπαλάκι από το κινητό σου. Αν μπει στο ποτηράκι, εξαφανίζεται. Όποιος τα καθαρίσει πρώτος κερδίζει. Από 1 έως 4 παίκτες.</p>
+    <div class="brand big">Lydi Show<span>TV Games</span></div>
+    <div class="games" id="games"></div>
+    <h1 id="gTitle">Μπαλάκι <span>στα ποτηράκια</span></h1>
+    <p class="tag" id="gTag"></p>
     <ol class="steps">
-      <li>Σκάναρε τον QR με την κάμερα του κινητού</li>
-      <li>Γράψε το όνομά σου και μπες</li>
-      <li>Σύρε το μπαλάκι προς τα πάνω και άφησέ το</li>
+      <li>Σκάναρε τον QR και γράψε το όνομά σου</li>
+      <li id="gHow">Σύρε το μπαλάκι προς τα πάνω και άφησέ το</li>
     </ol>
     <div class="slots" id="slots"></div>
     <div class="actions">
@@ -59,7 +60,7 @@
     <ol id="rank"></ol>
     <div class="actions">
       <button id="btnAgain" class="btn primary">Ξανά</button>
-      <button id="btnLobby" class="btn">Νέοι παίκτες</button>
+      <button id="btnLobby" class="btn">Μενού παιχνιδιών</button>
     </div>
   </div>
 </section>
@@ -68,6 +69,13 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="js/common.js"></script>
 <script src="js/game-cups.js"></script>
+<script src="js/mini-common.js"></script>
+<script src="js/game-star.js"></script>
+<script src="js/game-balloon.js"></script>
+<script src="js/game-race.js"></script>
+<script src="js/game-tomato.js"></script>
+<script src="js/game-sumo.js"></script>
+<script src="js/game-who.js"></script>
 <script src="js/tv.js"></script>
 </body>
 </html>

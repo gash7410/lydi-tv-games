@@ -1,11 +1,19 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; background: #0d0726; color: #fff; font-family: 'Noto Sans', system-ui, sans-serif; }
-canvas#stage { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+canvas#stage, canvas#stage2 { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 [hidden] { display: none !important; }
 
 .brand { font-family: 'Comfortaa', sans-serif; font-weight: 700; font-size: 3.2vh; letter-spacing: .02em; }
 .brand span { color: #ffc93d; margin-left: .15em; }
-.brand.big { font-size: 4vh; margin-bottom: 1.5vh; }
+.brand.big { font-size: 4vh; margin-bottom: 1.6vh; }
+
+.games { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2vh; margin-bottom: 2.4vh; }
+.btn.game {
+  display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1vh; padding: .9vh 1.2vh; border-radius: 2vh;
+  font-size: 2.1vh; background: rgba(255,255,255,.07); text-align: left; line-height: 1.15;
+}
+.btn.game svg { width: 4.8vh; height: 4.8vh; flex: none; }
+.btn.game.sel { background: rgba(255,201,61,.16); border-color: #ffc93d; color: #ffe8a8; }
 
 /* ---------- lobby ---------- */
 #lobby {
@@ -13,25 +21,26 @@ canvas#stage { position: fixed; inset: 0; width: 100vw; height: 100vh; display: 
   align-items: center; padding: 6vh 6vw;
   background: linear-gradient(90deg, rgba(13,7,38,.94) 0%, rgba(13,7,38,.82) 55%, rgba(13,7,38,.55) 100%);
 }
-h1 { font-family: 'Comfortaa', sans-serif; font-size: 8vh; line-height: 1.02; }
+h1 { font-family: 'Comfortaa', sans-serif; font-size: 6.6vh; line-height: 1.02; }
 h1 span { display: block; color: #ff4d5e; font-size: .72em; margin-top: .6vh; }
-.tag { font-size: 2.5vh; line-height: 1.45; color: #d9d3f2; margin: 2.4vh 0 2.2vh; max-width: 46em; }
-.steps { list-style: none; counter-reset: s; display: grid; gap: 1.1vh; margin-bottom: 3vh; }
+.tag { font-size: 2.3vh; line-height: 1.45; color: #d9d3f2; margin: 1.8vh 0 1.8vh; max-width: 46em; min-height: 6.7vh; }
+.steps { list-style: none; counter-reset: s; display: grid; gap: 1vh; margin-bottom: 2.4vh; }
 .steps li { counter-increment: s; font-size: 2.3vh; display: flex; align-items: center; gap: 1.2vh; color: #fff; }
 .steps li::before {
   content: counter(s); width: 3.6vh; height: 3.6vh; border-radius: 50%; display: grid; place-items: center;
   background: #ffc93d; color: #1b0f3a; font-weight: 800; flex: none;
 }
-.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.4vh; margin-bottom: 3vh; }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.4vh; margin-bottom: 2.4vh; }
 .slot {
-  --c: #fff; border: 2px dashed rgba(255,255,255,.22); border-radius: 2vh; padding: 1.8vh 1vh; text-align: center;
+  --c: #fff; border: 2px dashed rgba(255,255,255,.22); border-radius: 2vh; padding: 1.4vh 1vh; text-align: center;
   opacity: .55; transition: .3s;
 }
 .slot.on { border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); opacity: 1; transform: translateY(-.4vh); }
-.cup-ico {
-  width: 5vh; height: 6vh; margin: 0 auto 1vh; background: var(--c);
-  clip-path: polygon(0 0, 100% 0, 82% 100%, 18% 100%); border-top: 1vh solid #fff;
+.av {
+  width: 5.4vh; height: 5.4vh; margin: 0 auto .9vh; border-radius: 50%; background: var(--c); color: #1b0f3a;
+  display: grid; place-items: center; font: 800 2.6vh 'Noto Sans', sans-serif; border: .35vh solid #1c1a2b;
 }
+.slot:not(.on) .av { background: transparent; color: rgba(255,255,255,.5); border: .3vh dashed rgba(255,255,255,.4); }
 .slot .nm { font-weight: 800; font-size: 2.1vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .actions { display: flex; flex-wrap: wrap; gap: 1.4vh; }
 .btn {

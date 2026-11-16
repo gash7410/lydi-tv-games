@@ -3,15 +3,18 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const params = new URLSearchParams(location.search);
-  let cid = localStorage.getItem('tvp_cid');
-  if (!cid) { cid = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('tvp_cid', cid); }
+  // ?p=… ξεχωρίζει πολλά χειριστήρια στον ίδιο browser (σελίδα δοκιμής demo.html)
+  const cidKey = 'tvp_cid' + (params.get('p') || '').replace(/\W/g, '').slice(0, 4);
+  let cid = localStorage.getItem(cidKey);
+  if (!cid) { cid = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem(cidKey, cid); }
 
   $('#inCode').value = params.get('r') || localStorage.getItem('tvp_code') || '';
   $('#inName').value = localStorage.getItem('tvp_name') || '';
 
   let peer = null, conn = null, code = '', name = '', joined = false, st = null, retry = 0;
 
-  function show(id) { ['#scrJoin', '#scrWait', '#scrPad'].forEach((s) => ($(s).hidden = s !== id)); }
+  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
+  const sendMsg = (m) => { if (conn && conn.open) try { conn.send(m); } catch (e) {} };
   function setConn(ok, t) { const c = $('#conn'); c.textContent = t; c.classList.toggle('ok', !!ok); }
 
   $('#joinForm').addEventListener('submit', (e) => {
@@ -74,6 +77,12 @@
 
   function onData(d) {
     if (!d || typeof d !== 'object') return;
+    if (d.type === 'ping') return sendMsg({ type: 'pong', t: d.t });
+    if (d.type === 'fx') {
+      if (d.vib) vibrate(d.vib);
+      if (d.flash) flash();
+      return showFx(d.text);
+    }
     if (d.type === 'reject') { try { conn.close(); } catch (e) {} return fail(d.reason); }
     if (d.type === 'result') {
       if (d.made) { vibrate([60, 40, 120]); flash(); }
@@ -87,6 +96,23 @@
     const s = st;
     document.body.style.setProperty('--c', s.me.color.hex);
     $('#myName').textContent = s.me.name;
+    $('#myAv').textContent = s.me.name.slice(0, 1).toUpperCase();
+    const gm = TVP.GAMES.find((g) => g.id === s.game) || TVP.GAMES[0];
+    document.querySelectorAll('.pName').forEach((e) => (e.textContent = s.me.name));
+    document.querySelectorAll('.pScore').forEach((e) => (e.textContent = s.score ? `Πόντοι: ${s.score.v}${s.score.of ? '/' + s.score.of : ''}` : ''));
+    $('#gameNow').innerHTML = '';
+    $('#gameNow').append('Παιχνίδι: ', Object.assign(document.createElement('b'), { textContent: gm.title }));
+    const canPick = s.host && (s.phase === 'lobby' || s.phase === 'over');
+    $('#picker').hidden = !canPick;
+    if (canPick) {
+      $('#picker').replaceChildren(...TVP.GAMES.map((g) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'pick' + (g.id === s.game ? ' sel' : '');
+        b.textContent = g.title;
+        b.addEventListener('click', () => sendMsg({ type: 'pick', game: g.id }));
+        return b;
+      }));
+    }
     $('#myColor').textContent = `Παίκτης ${s.me.index + 1} · ${s.me.color.name}`;
     $('#padName').textContent = s.me.name;
     $('#padLeft').textContent = `Ποτηράκια: ${s.left}/${s.total}`;
@@ -94,8 +120,40 @@
     $('#btnLobby').hidden = !(s.host && s.phase === 'over');
     $('#btnStart').textContent = s.phase === 'over' ? 'Ξανά' : 'Έναρξη παιχνιδιού';
 
+    const tossMode = s.phase === 'play' && s.ctrl && s.ctrl.mode === 'throw';
+    $('#scrPad').classList.toggle('tomato', tossMode);
+    if (tossMode) {
+      if ($('#scrPad').hidden) { show('#scrPad'); resetBall(); vibrate(40); }
+      $('#padName').textContent = s.me.name;
+      $('#padLeft').textContent = s.score ? `Πετυχημένες: ${s.score.v}/${s.score.of}` : '';
+      $('#padHint').innerHTML = s.ctrl.active ? 'Σύρε τη ντομάτα προς τα πάνω<br><small>όσο πιο ψηλά, τόσο πιο ψηλά στον Μητσοτάκη · λοξά για στόχευση</small>' : s.ctrl.label;
+      $('#pad').classList.toggle('off', !s.ctrl.active);
+      return;
+    }
+    $('#pad').classList.remove('off');
+    $('#padHint').innerHTML = 'Σύρε το μπαλάκι προς τα πάνω<br><small>όσο πιο ψηλά, τόσο πιο δυνατά · λοξά για στόχευση</small>';
     if (s.phase === 'play' && s.yourTurn) {
       if ($('#scrPad').hidden) { show('#scrPad'); resetBall(); vibrate(40); }
+      return;
+    }
+    if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'tap') {
+      show('#scrTap');
+      $('#tapLabel').textContent = s.ctrl.label;
+      $('#tapSub').textContent = s.ctrl.sub || '';
+      $('#tapBtn').classList.toggle('off', !s.ctrl.active);
+      return;
+    }
+    if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'joy') {
+      if ($('#scrJoy').hidden) { show('#scrJoy'); vibrate(30); }
+      $('#joyMsg').textContent = s.ctrl.active ? '' : (s.ctrl.label || '');
+      $('#joySub').textContent = s.ctrl.active ? 'Σύρε τον κύκλο για να κινηθείς' : (s.ctrl.sub || '');
+      $('#scrJoy').classList.toggle('off', !s.ctrl.active);
+      if (!s.ctrl.active) joyReset();
+      return;
+    }
+    if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'choice') {
+      if ($('#scrChoice').hidden) { show('#scrChoice'); vibrate(30); }
+      renderChoice(s.ctrl);
       return;
     }
     show('#scrWait');
@@ -106,11 +164,106 @@
         : `Παίκτες: ${s.count}/4. Περιμένουμε να ξεκινήσει ο παίκτης 1.`;
     } else if (s.phase === 'play') {
       $('#waitMsg').textContent = s.current ? `Ρίχνει: ${s.current.name}` : 'Περιμένουμε…';
+      $('#gameNow').textContent = '';
       $('#waitSub').textContent = `Σου απομένουν ${s.left} από ${s.total} ποτηράκια. Κοίτα την τηλεόραση!`;
     } else if (s.phase === 'over') {
       $('#waitMsg').textContent = s.winner && s.winner.me ? '🏆 Κέρδισες!' : `Νίκησε: ${s.winner ? s.winner.name : ''}`;
       $('#waitSub').textContent = s.host ? 'Πάτα «Ξανά» για νέο γύρο.' : 'Περιμένουμε τον παίκτη 1 για νέο γύρο.';
     }
+  }
+
+  // ---------- μεγάλο κουμπί (Αστεράκι, Μπαλόνια) ----------
+  const tapBtn = $('#tapBtn');
+  tapBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    sendMsg({ type: 'tap' });
+    tapBtn.classList.remove('hit'); void tapBtn.offsetWidth; tapBtn.classList.add('hit');
+    vibrate(12);
+  });
+  tapBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // ---------- joystick + ορμή (Σπρωξίματα) ----------
+  const joy = $('#joy'), knob = $('#knob'), dashBtn = $('#dashBtn');
+  let jd = null, lastJoy = 0, jv = { x: 0, y: 0 }, joyTimer = null;
+  function joySend(force) {
+    const now = performance.now();
+    if (!force && now - lastJoy < 40) {
+      if (!joyTimer) joyTimer = setTimeout(() => { joyTimer = null; joySend(true); }, 40);
+      return;
+    }
+    lastJoy = now; sendMsg({ type: 'joy', x: +jv.x.toFixed(3), y: +jv.y.toFixed(3) });
+  }
+  function joyMove(e) {
+    const r = joy.getBoundingClientRect(), R = r.width / 2;
+    let dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R);
+    const l = Math.hypot(dx, dy), m = R * 0.62;
+    if (l > m) { dx = (dx / l) * m; dy = (dy / l) * m; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    jv = { x: dx / m, y: dy / m };
+    joySend();
+  }
+  function joyReset() {
+    jd = null; knob.style.transform = 'translate(0,0)';
+    if (jv.x || jv.y) { jv = { x: 0, y: 0 }; joySend(true); }
+  }
+  joy.addEventListener('pointerdown', (e) => {
+    if ($('#scrJoy').classList.contains('off')) return;
+    jd = e.pointerId; try { joy.setPointerCapture(e.pointerId); } catch (er) {}
+    joyMove(e);
+  });
+  joy.addEventListener('pointermove', (e) => { if (e.pointerId === jd) joyMove(e); });
+  joy.addEventListener('pointerup', (e) => { if (e.pointerId === jd) joyReset(); });
+  joy.addEventListener('pointercancel', (e) => { if (e.pointerId === jd) joyReset(); });
+  let dashReady = 0;
+  dashBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if ($('#scrJoy').classList.contains('off') || performance.now() < dashReady) return;
+    dashReady = performance.now() + 1400;
+    sendMsg({ type: 'dash' });
+    vibrate(35);
+    dashBtn.classList.add('cool');
+    setTimeout(() => dashBtn.classList.remove('cool'), 1400);
+  });
+
+  // ---------- 4 απαντήσεις («Ποιος είναι;») ----------
+  let choiceQ = null, choiceSent = null;
+  function renderChoice(c) {
+    const box = $('#choices');
+    if (choiceQ !== c.q) {
+      choiceQ = c.q; choiceSent = null;
+      box.replaceChildren(...c.opts.map((o, i) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'choice';
+        b.style.setProperty('--oc', c.colors[i]);
+        b.innerHTML = '<i></i><span></span>';
+        b.querySelector('i').textContent = c.letters[i];
+        b.querySelector('span').textContent = o;
+        b.addEventListener('click', () => {
+          if (box.classList.contains('off') || choiceSent === choiceQ) return;
+          choiceSent = choiceQ;
+          sendMsg({ type: 'ans', i });
+          b.classList.add('picked'); box.classList.add('off');
+          vibrate(20);
+        });
+        return b;
+      }));
+    }
+    const picked = c.picked != null ? c.picked : null;
+    box.classList.toggle('off', !c.active || choiceSent === choiceQ);
+    [...box.children].forEach((b, i) => {
+      b.classList.toggle('picked', picked === i);
+      b.classList.toggle('good', c.correct === i);
+      b.classList.toggle('bad', c.correct != null && picked === i && c.correct !== i);
+    });
+    $('#choiceMsg').textContent = c.label || '';
+    $('#choiceSub').textContent = c.sub || '';
+  }
+
+  let fxT = null;
+  function showFx(t) {
+    const f = $('#fxMsg');
+    f.textContent = t || ''; f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+    clearTimeout(fxT); fxT = setTimeout(() => f.classList.remove('on'), 1600);
   }
 
   $('#btnStart').addEventListener('click', () => conn && conn.open && conn.send({ type: 'start' }));
@@ -129,7 +282,7 @@
   }
 
   pad.addEventListener('pointerdown', (e) => {
-    if (!st || !st.yourTurn || thrown) return;
+    if (!st || !(st.yourTurn || canToss()) || thrown) return;
     drag = { x0: e.clientX, y0: e.clientY, id: e.pointerId };
     try { pad.setPointerCapture(e.pointerId); } catch (err) {}
     ball.className = '';
@@ -142,7 +295,7 @@
     ball.style.transform = `translate(${v.dx * 0.8}px, ${-Math.max(0, Math.min(v.up, maxUp))}px)`;
     fill.style.height = v.p * 100 + '%';
     const now = performance.now();
-    if (now - lastAim > 50 && conn && conn.open) { lastAim = now; conn.send({ type: 'aim', ax: v.ax, p: v.p }); }
+    if (!canToss() && now - lastAim > 50 && conn && conn.open) { lastAim = now; conn.send({ type: 'aim', ax: v.ax, p: v.p }); }
   });
   function release(e) {
     if (!drag || e.pointerId !== drag.id) return;
@@ -150,11 +303,12 @@
     drag = null;
     if (v.p > 0.06 && e.type === 'pointerup') {
       thrown = true;
-      conn && conn.open && conn.send({ type: 'throw', ax: v.ax, p: v.p });
+      const toss = canToss();
+      conn && conn.open && conn.send({ type: toss ? 'toss' : 'throw', ax: v.ax, p: v.p });
       vibrate(30);
       ball.className = 'fly';
       ball.style.transform = `translate(${v.ax * 120}px, ${-pad.clientHeight}px) scale(.3)`;
-      setTimeout(() => { thrown = false; resetBall(); if (st) render(); }, 650);
+      setTimeout(() => { thrown = false; resetBall(); if (st) render(); }, toss ? 380 : 650);
     } else {
       conn && conn.open && conn.send({ type: 'aim', ax: 0, p: 0 });
       resetBall(true);
@@ -162,6 +316,8 @@
   }
   pad.addEventListener('pointerup', release);
   pad.addEventListener('pointercancel', release);
+
+  function canToss() { return !!(st && st.phase === 'play' && st.ctrl && st.ctrl.mode === 'throw' && st.ctrl.active); }
 
   function resetBall(anim) {
     ball.className = anim ? 'back' : '';

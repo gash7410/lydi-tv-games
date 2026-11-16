@@ -18,7 +18,7 @@
 </header>
 
 <section id="scrJoin" class="scr">
-  <h1>Μπαλάκι<br><span>στα ποτηράκια</span></h1>
+  <h1>Έλα να<br><span>παίξουμε!</span></h1>
   <form id="joinForm" autocomplete="off">
     <label>Κωδικός δωματίου (στην τηλεόραση)
       <input id="inCode" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="1234" required>
@@ -32,9 +32,11 @@
 </section>
 
 <section id="scrWait" class="scr" hidden>
-  <div class="badge" id="badge"><div class="cup"></div><div id="myName"></div><div id="myColor"></div></div>
+  <div class="badge" id="badge"><div class="av" id="myAv"></div><div id="myName"></div><div id="myColor"></div></div>
   <p id="waitMsg" class="big-msg"></p>
   <p id="waitSub" class="sub"></p>
+  <div id="gameNow" class="game-now"></div>
+  <div id="picker" class="picker" hidden></div>
   <button id="btnStart" class="btn primary" hidden>Έναρξη παιχνιδιού</button>
   <button id="btnLobby" class="btn" hidden>Νέοι παίκτες</button>
 </section>
@@ -49,6 +51,30 @@
   </div>
 </section>
 
+<section id="scrTap" class="scr play-scr" hidden>
+  <div class="pad-info"><b class="pName"></b><span class="pScore"></span></div>
+  <div class="tap-wrap">
+    <button id="tapBtn" class="tap-btn" type="button"><span id="tapLabel">ΠΑΤΑ!</span></button>
+  </div>
+  <p id="tapSub" class="play-sub"></p>
+</section>
+
+<section id="scrJoy" class="scr play-scr" hidden>
+  <div class="pad-info"><b class="pName"></b><span class="pScore"></span></div>
+  <p id="joyMsg" class="joy-msg"></p>
+  <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
+  <button id="dashBtn" class="dash-btn" type="button">ΩΘΗΣΗ</button>
+  <p id="joySub" class="play-sub"></p>
+</section>
+
+<section id="scrChoice" class="scr play-scr" hidden>
+  <div class="pad-info"><b class="pName"></b><span class="pScore"></span></div>
+  <p id="choiceMsg" class="joy-msg"></p>
+  <div id="choices" class="choices"></div>
+  <p id="choiceSub" class="play-sub"></p>
+</section>
+
+<div id="fxMsg" class="fx-msg"></div>
 <div id="flash"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>

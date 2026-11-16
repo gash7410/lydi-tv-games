@@ -28,7 +28,7 @@
 <body>
 <header>
   <h1>📺 Lydi TV Games — εικονική δοκιμή</h1>
-  <p>Αριστερά είναι η «τηλεόραση», δεξιά δύο «κινητά-χειριστήρια», όλα στην ίδια σελίδα. Γράψε όνομα σε κάθε κινητό, πάτα «Έναρξη» και σύρε το μπαλάκι προς τα πάνω.</p>
+  <p>Αριστερά είναι η «τηλεόραση», δεξιά δύο «κινητά-χειριστήρια», όλα στην ίδια σελίδα. Γράψε όνομα σε κάθε κινητό, διάλεξε παιχνίδι και πάτα «Έναρξη».</p>
 </header>
 <div class="wrap">
   <div class="tv"><iframe id="tv" src="index.html" title="Τηλεόραση"></iframe></div>
@@ -48,7 +48,7 @@
     if (!/^\d{4}$/.test(code)) { if (++tries < 60) return setTimeout(attach, 500);
       document.querySelectorAll('.wait').forEach(w => w.textContent = 'Η τηλεόραση δεν πήρε κωδικό. Πάτα «Ξεκίνα από την αρχή».'); return; }
     ['ph1','ph2'].forEach((id, k) => setTimeout(() => {
-      document.getElementById(id).innerHTML = `<iframe src="controller.html?r=${code}" title="Κινητό ${k+1}" allow="vibrate"></iframe>`;
+      document.getElementById(id).innerHTML = `<iframe src="controller.html?r=${code}&p=${k+1}" title="Κινητό ${k+1}" allow="vibrate"></iframe>`;
     }, k * 700));
   }
   setTimeout(attach, 1200);
