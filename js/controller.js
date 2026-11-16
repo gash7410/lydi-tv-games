@@ -13,7 +13,7 @@
 
   let peer = null, conn = null, code = '', name = '', joined = false, st = null, retry = 0;
 
-  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
+  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrRun', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
   const sendMsg = (m) => { if (conn && conn.open) try { conn.send(m); } catch (e) {} };
   function setConn(ok, t) { const c = $('#conn'); c.textContent = t; c.classList.toggle('ok', !!ok); }
 
@@ -151,6 +151,15 @@
       if (!s.ctrl.active) joyReset();
       return;
     }
+    if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'run') {
+      if ($('#scrRun').hidden) { show('#scrRun'); vibrate(30); }
+      $('#runMsg').textContent = s.ctrl.active ? '' : (s.ctrl.label || '');
+      $('#runSub').textContent = s.ctrl.sub || '';
+      $('#scrRun').classList.toggle('off', !s.ctrl.active);
+      $('#runBtn small').textContent = s.ctrl.runHint || 'πάτα γρήγορα';
+      $('#jumpBtn small').textContent = s.ctrl.jumpHint || 'πριν το εμπόδιο';
+      return;
+    }
     if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'choice') {
       if ($('#scrChoice').hidden) { show('#scrChoice'); vibrate(30); }
       renderChoice(s.ctrl);
@@ -181,6 +190,19 @@
     vibrate(12);
   });
   tapBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // ---------- τρέξιμο + άλμα (Δασόδρομος) ----------
+  // το «ΤΡΕΞΕ» στέλνει tap και πριν τη σφυρίχτρα, ώστε να μετράει η άκυρη εκκίνηση
+  [['#runBtn', 'tap', 10], ['#jumpBtn', 'jump', 25]].forEach(([sel, type, vib]) => {
+    const b = $(sel);
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      sendMsg({ type });
+      b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+      vibrate(vib);
+    });
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
 
   // ---------- joystick + ορμή (Σπρωξίματα) ----------
   const joy = $('#joy'), knob = $('#knob'), dashBtn = $('#dashBtn');

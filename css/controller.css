@@ -119,6 +119,20 @@ input:focus { outline: none; border-color: #ffc93d; }
 .dash-btn.cool { filter: grayscale(1) brightness(.7); }
 #scrJoy.off .joy, #scrJoy.off .dash-btn { opacity: .35; }
 
+/* δύο κουμπιά: τρέξιμο + άλμα (Δασόδρομος) */
+.run-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 6px 12px 14px; }
+.run-btn {
+  border-radius: 28px; border: 5px solid #1c1a2b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 70%, #fff) 0%, var(--c) 45%, color-mix(in srgb, var(--c) 70%, #000) 100%);
+  box-shadow: 0 10px 0 color-mix(in srgb, var(--c) 45%, #000); color: #fff;
+  font: 800 clamp(24px, 8vw, 38px) 'Noto Sans', sans-serif; text-shadow: 0 3px 0 rgba(0,0,0,.35);
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.run-btn small { font-size: 13px; font-weight: 700; opacity: .85; text-shadow: none; }
+.run-btn.jump { background: linear-gradient(180deg, #a6f08a 0%, #43b84a 45%, #237a2c 100%); box-shadow: 0 10px 0 #17521d; }
+.run-btn.hit { animation: hit .12s ease-out; }
+#scrRun.off .run-btn { filter: grayscale(.85) brightness(.7); }
+
 .fx-msg {
   position: fixed; left: 16px; right: 16px; top: 34%; text-align: center; pointer-events: none;
   font: 800 26px/1.25 'Noto Sans', sans-serif; text-shadow: 0 3px 12px rgba(0,0,0,.7);
