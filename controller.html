@@ -59,14 +59,6 @@
   <p id="tapSub" class="play-sub"></p>
 </section>
 
-<section id="scrJoy" class="scr play-scr" hidden>
-  <div class="pad-info"><b class="pName"></b><span class="pScore"></span></div>
-  <p id="joyMsg" class="joy-msg"></p>
-  <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
-  <button id="dashBtn" class="dash-btn" type="button">ΩΘΗΣΗ</button>
-  <p id="joySub" class="play-sub"></p>
-</section>
-
 <section id="scrRun" class="scr play-scr" hidden>
   <div class="pad-info"><b class="pName"></b><span class="pScore"></span></div>
   <p id="runMsg" class="joy-msg"></p>
@@ -77,16 +69,29 @@
   <p id="runSub" class="play-sub"></p>
 </section>
 
-<section id="scrPlat" class="scr play-scr" hidden>
-  <div class="pad-info"><b class="pName"></b><span id="platScore"></span></div>
-  <p id="platMsg" class="joy-msg"></p>
-  <div class="plat-wrap">
-    <button id="platL" class="plat-btn arrow" type="button" aria-label="Αριστερά">◀&#xFE0E;</button>
-    <button id="platR" class="plat-btn arrow" type="button" aria-label="Δεξιά">▶&#xFE0E;</button>
-    <button id="platJump" class="plat-btn jump" type="button">ΑΛΜΑ</button>
-    <button id="platShoot" class="plat-btn shoot" type="button">ΦΟΥΣΚΑ</button>
+<section id="scrPlat" class="scr play-scr gp" hidden>
+  <div class="gp-in">
+    <div class="gp-top"><b class="pName"></b><span id="platMsg" class="gp-msg"></span><span id="platScore" class="gp-score"></span><button id="gpGear" class="gp-gear" type="button" aria-label="Ρύθμιση κουμπιών">⚙</button></div>
+      <div id="gpEdit" class="gp-edit" hidden>
+        <span class="gp-edit-t">✋ Σύρε τα κουμπιά όπου σε βολεύει</span>
+        <button id="gpSmall" type="button" aria-label="Μικρότερο">−</button><button id="gpBig" type="button" aria-label="Μεγαλύτερο">+</button>
+        <button id="gpReset" type="button">↺ Αρχικά</button><button id="gpDone" class="ok" type="button">✓ Έτοιμο</button>
+      </div>
+    <div class="gp-body">
+      <div class="gp-left">
+        <div id="gpStick" class="gp-stick" aria-label="Κατεύθυνση">
+          <i class="gp-arr up"></i><i class="gp-arr rt"></i><i class="gp-arr dn"></i><i class="gp-arr lf"></i>
+          <div id="gpKnob" class="gp-knob"></div>
+        </div>
+      </div>
+      <div class="gp-right">
+        <button id="platExtra" class="gp-btn extra" type="button">ΤΡΕΞΕ</button>
+        <button id="platJump" class="gp-btn jump" type="button">ΠΗΔΑ</button>
+        <button id="platShoot" class="gp-btn shoot" type="button">ΡΙΞΕ</button>
+      </div>
+    </div>
+    <p id="platSub" class="gp-sub"></p>
   </div>
-  <p id="platSub" class="play-sub"></p>
 </section>
 
 <section id="scrChoice" class="scr play-scr" hidden>

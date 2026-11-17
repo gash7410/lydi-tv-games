@@ -487,6 +487,7 @@
     input(part, msg) {
       if (!part) return;
       if (msg.type === 'move') { part.mv = U.clamp(Math.round(+msg.d || 0), -1, 1); return; }
+      if (msg.type === 'extra') { part.turbo = !!msg.on; return; }
       if (this.phase !== 'go' || part.dead > 0) return;
       if (msg.type === 'jump') part.jumpBuf = 0.15;
       else if (msg.type === 'dash') this.throwAxe(part);
@@ -583,7 +584,7 @@
       if (p.cloud > 0) p.cloud = Math.max(0, p.cloud - dt);
       if (this.phase === 'go') p.en -= DRAIN * (p.cloud > 0 ? 3.2 : 1) * dt;
       if (p.en <= 0) { p.en = 0; this.floatText(p.x, p.y - 30, 'Εξάντληση!', '#ffd0a0'); return this.die(p); }
-      const mv = p.trip > 0 ? 0 : p.mv, top = p.skate ? SKATE : SPD;
+      const mv = p.trip > 0 ? 0 : p.mv, top = (p.skate ? SKATE : SPD) * (p.turbo ? 1.4 : 1);
       const acc = p.onG ? (p.skate ? 420 : 900) : 560;
       p.vx += U.clamp(mv * top - p.vx, -acc * dt, acc * dt);
       if (mv) p.face = mv;
@@ -934,10 +935,10 @@
     }
 
     ctrl(part) {
-      const base = { mode: 'plat', scoreText: `❤ ${this.lives} · ${part.score} πόντοι`, shoot: part.axe ? 'ΡΙΞΕ 🪓' : 'ΧΩΡΙΣ 🪓', shootOff: !part.axe };
+      const base = { mode: 'plat', scoreText: `❤ ${this.lives} · ${part.score} πόντοι`, shoot: part.axe ? 'ΡΙΞΕ 🪓' : 'ΧΩΡΙΣ 🪓', shootOff: !part.axe, jump: 'ΠΗΔΑ', extra: 'ΤΡΕΞΕ 💨' };
       if (this.phase === 'go' && part.dead > 0) return { ...base, active: false, label: '💫 Ωχ!', sub: 'Ξαναβγαίνεις σε λίγο' };
       if (this.phase === 'go' || this.phase === 'clear' || this.phase === 'won') return { ...base, active: true, label: '', sub: part.axe ? '' : 'Σπάσε αυγά για να βρεις τσεκούρι' };
-      return { ...base, active: false, label: this.phase === 'count' ? `Περιοχή ${this.area} · Ετοιμάσου!` : this.phase === 'lost' ? '💔 Τέλος' : 'Μπράβο!', sub: '◀ ▶ τρέξιμο · ΑΛΜΑ · ΡΙΞΕ τσεκούρι' };
+      return { ...base, active: false, label: this.phase === 'count' ? `Περιοχή ${this.area} · Ετοιμάσου!` : this.phase === 'lost' ? '💔 Τέλος' : 'Μπράβο!', sub: '◀ ▶ κίνηση · ΠΗΔΑ · ΡΙΞΕ τσεκούρι · κράτα ΤΡΕΞΕ για ταχύτητα' };
     }
 
     // ---------- σχεδίαση ----------

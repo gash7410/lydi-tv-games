@@ -142,20 +142,120 @@ input:focus { outline: none; border-color: #ffc93d; }
 .run-btn.hit { animation: hit .12s ease-out; }
 #scrRun.off .run-btn { filter: grayscale(.85) brightness(.7); }
 
-/* ◀ ▶ + ΑΛΜΑ + ΦΟΥΣΚΑ (Φουσκοπάντα): αριστερός αντίχειρας βελάκια, δεξιός τα κουμπιά */
-.plat-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1.25fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 6px 10px 14px; }
-.plat-btn {
-  border-radius: 24px; border: 5px solid #1c1a2b; color: #fff; display: flex; align-items: center; justify-content: center;
-  font: 800 clamp(18px, 5.6vw, 34px) 'Noto Sans', sans-serif; text-shadow: 0 3px 0 rgba(0,0,0,.35);
-  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+/* οριζόντιο gamepad (παιχνίδια με μοχλό + 3 κουμπιά: Ζούγκλα, Φουσκοπάντα)
+   αριστερά ο μοχλός, δεξιά τρία στρογγυλά κουμπιά σε διαγώνια διάταξη.
+   Αν το κινητό είναι όρθιο, όλο το χειριστήριο γυρίζει 90° ώστε να κρατιέται οριζόντια. */
+.gp { position: fixed; inset: 0; z-index: 20; padding: 0; overflow: hidden; background: #07040f; }
+.gp-in {
+  --W: 100vw; --H: 100vh; --u: calc(var(--H) / 100);
+  position: absolute; left: 0; top: 0; width: var(--W); height: var(--H); display: flex; flex-direction: column;
+  padding: calc(var(--u) * 3) max(calc(var(--u) * 4), env(safe-area-inset-right)) calc(var(--u) * 3) max(calc(var(--u) * 4), env(safe-area-inset-left));
+  background:
+    radial-gradient(60% 90% at 24% 62%, rgba(255,45,138,.16), transparent 70%),
+    radial-gradient(55% 85% at 80% 60%, rgba(79,195,255,.13), transparent 70%),
+    repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #241246 0%, #130a2c 55%, #0a0619 100%);
 }
-.plat-btn.arrow { grid-row: 1 / 3; font-size: clamp(34px, 11vw, 64px); background: linear-gradient(180deg, #8f86b8 0%, #5b5290 45%, #39306a 100%); box-shadow: 0 9px 0 #241d4a; }
-.plat-btn.arrow.down { transform: translateY(6px); box-shadow: 0 3px 0 #241d4a; filter: brightness(1.25); }
-.plat-btn.jump { background: linear-gradient(180deg, #a6f08a 0%, #43b84a 45%, #237a2c 100%); box-shadow: 0 9px 0 #17521d; }
-.plat-btn.shoot { background: radial-gradient(circle at 35% 30%, #d9f6ff 0%, #4fc3ff 45%, #1d6fb0 100%); box-shadow: 0 9px 0 #134a78; }
-.plat-btn.hit { animation: hit .12s ease-out; }
-#scrPlat .plat-btn.dim { filter: grayscale(.9) brightness(.65); font-size: 80%; }
-#scrPlat.off .plat-btn { filter: grayscale(.85) brightness(.7); }
+@media (orientation: portrait) {
+  .gp-in { --W: 100vh; --H: 100vw; left: 100vw; transform-origin: 0 0; transform: rotate(90deg); }
+}
+@supports (height: 100dvh) {
+  .gp-in { --H: 100dvh; }
+  @media (orientation: portrait) { .gp-in { --W: 100dvh; --H: 100vw; } }
+}
+.gp-top { display: flex; align-items: center; gap: calc(var(--u) * 3); height: calc(var(--u) * 10); padding: 0 calc(var(--u) * 2); }
+.gp-top .pName { font: 800 calc(var(--u) * 5.4) 'Noto Sans', sans-serif; color: var(--c); text-shadow: 0 0 calc(var(--u) * 3) color-mix(in srgb, var(--c) 60%, transparent); }
+.gp-msg { flex: 1; text-align: center; font: 800 calc(var(--u) * 5.4) 'Noto Sans', sans-serif; color: #ffe27a; }
+.gp-score { font: 700 calc(var(--u) * 4.6) 'Noto Sans', sans-serif; color: #e9e3ff; padding: calc(var(--u) * 1) calc(var(--u) * 3); border-radius: 99px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+.gp-score:empty { display: none; }
+.gp-body { flex: 1; min-height: 0; display: flex; }
+.gp-left { flex: 0 0 46%; display: grid; place-items: center; }
+.gp-right { flex: 1; position: relative; }
+.gp-sub { position: absolute; left: 0; right: 0; bottom: calc(var(--u) * 1.5); text-align: center; pointer-events: none;
+  font: 600 calc(var(--u) * 3.6) 'Noto Sans', sans-serif; color: rgba(233,227,255,.7); }
+
+/* μοχλός */
+.gp-stick {
+  --s: min(calc(var(--H) * .74), calc(var(--W) * .4));
+  position: relative; width: var(--s); height: var(--s); border-radius: 50%; touch-action: none;
+  background:
+    radial-gradient(circle, transparent 0 60%, rgba(0,0,0,.55) 61% 63%, transparent 64%),
+    radial-gradient(circle at 50% 40%, #3a2a66 0%, #1b1236 58%, #0d0820 70%),
+    conic-gradient(from 210deg, #9b8fd0, #3c2f6e, #c8bff0, #3c2f6e, #9b8fd0);
+  box-shadow: 0 0 0 calc(var(--s) * .035) #c5bbef inset, 0 0 0 calc(var(--s) * .055) #2a1d52 inset,
+    0 calc(var(--s) * .04) calc(var(--s) * .08) rgba(0,0,0,.6), 0 0 calc(var(--s) * .14) rgba(255,45,138,.18);
+}
+.gp-stick::before { /* εσωτερικό πηγάδι */
+  content: ''; position: absolute; inset: 24%; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #120b26, #050310 75%);
+  box-shadow: inset 0 calc(var(--s) * .02) calc(var(--s) * .04) rgba(0,0,0,.9), 0 0 0 2px rgba(255,255,255,.06);
+}
+.gp-arr {
+  position: absolute; left: 50%; top: 50%; width: calc(var(--s) * .17); height: calc(var(--s) * .2); margin: calc(var(--s) * -.1) 0 0 calc(var(--s) * -.085);
+  background: linear-gradient(180deg, #fff, #cfc6f5); opacity: .55; transition: opacity .08s, filter .08s;
+  clip-path: polygon(50% 0, 100% 52%, 70% 52%, 70% 100%, 30% 100%, 30% 52%, 0 52%);
+  filter: drop-shadow(0 0 0 transparent);
+}
+.gp-arr.up { transform: translateY(calc(var(--s) * -.355)); }
+.gp-arr.dn { transform: translateY(calc(var(--s) * .355)) rotate(180deg); }
+.gp-arr.lf { transform: translateX(calc(var(--s) * -.355)) rotate(-90deg); }
+.gp-arr.rt { transform: translateX(calc(var(--s) * .355)) rotate(90deg); }
+.gp-stick.u .up, .gp-stick.d .dn, .gp-stick.l .lf, .gp-stick.r .rt { opacity: 1; background: linear-gradient(180deg, #fff, #ff7ab8); filter: drop-shadow(0 0 6px #ff2d8a); }
+.gp-knob {
+  position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; margin: -15% 0 0 -15%; border-radius: 50%; pointer-events: none; will-change: transform;
+  background: radial-gradient(circle at 36% 30%, #fff 0 7%, #ff9cc9 16%, #ff2d8a 46%, #b8075a 78%, #6d0234 100%);
+  box-shadow: 0 calc(var(--s) * .035) calc(var(--s) * .05) rgba(0,0,0,.65), inset 0 calc(var(--s) * -.02) calc(var(--s) * .03) rgba(0,0,0,.35), 0 0 calc(var(--s) * .08) rgba(255,45,138,.55);
+  transition: transform .12s cubic-bezier(.3,1.6,.5,1);
+}
+.gp-stick.held .gp-knob { transition: none; }
+
+/* κουμπιά */
+.gp-btn {
+  --b: #43b84a; --d: #1d6b24; --z: calc(var(--H) * .33);
+  position: absolute; width: var(--z); height: var(--z); border-radius: 50%; border: 0; color: #fff;
+  font: 900 calc(var(--z) * .17) 'Noto Sans', sans-serif; letter-spacing: .02em; text-shadow: 0 2px 0 rgba(0,0,0,.45), 0 0 10px rgba(0,0,0,.3);
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 64%, rgba(0,0,0,.35) 66%, transparent 69%),
+    radial-gradient(circle at 36% 28%, rgba(255,255,255,.75) 0 6%, rgba(255,255,255,.18) 22%, transparent 42%),
+    radial-gradient(circle at 50% 60%, var(--b) 0 48%, var(--d) 72%);
+  box-shadow: 0 0 0 calc(var(--z) * .045) #120a24, 0 0 0 calc(var(--z) * .075) color-mix(in srgb, var(--b) 45%, #2a2048),
+    0 calc(var(--z) * .07) 0 calc(var(--z) * .045) color-mix(in srgb, var(--d) 70%, #000), 0 calc(var(--z) * .11) calc(var(--z) * .14) rgba(0,0,0,.55),
+    0 0 calc(var(--z) * .25) color-mix(in srgb, var(--b) 35%, transparent);
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform .06s, filter .15s;
+}
+.gp-btn.extra { --b: #ffb627; --d: #b0610a; --z: calc(var(--H) * .27); left: 8%; top: 3%; }
+.gp-btn.jump  { --b: #3fd35a; --d: #157a2a; right: 3%; top: 31%; }
+.gp-btn.shoot { --b: #ff4b3e; --d: #a3150e; left: 27%; bottom: 3%; }
+.gp-btn.down { transform: translateY(calc(var(--z) * .05)) scale(.96); filter: brightness(1.18); }
+.gp-btn.hit { animation: gpHit .16s ease-out; }
+@keyframes gpHit { 35% { transform: translateY(calc(var(--z) * .05)) scale(.93); filter: brightness(1.3); } }
+.gp-btn.dim { filter: grayscale(.9) brightness(.6); font-size: calc(var(--z) * .13); }
+/* ένα κουμπί (Διάστημα, Φούσκες, Σπρωξίματα): μεγάλο, στη μέση δεξιά */
+#scrPlat.one .gp-btn.shoot { --b: #ffb627; --d: #b0610a; --z: calc(var(--H) * .46); left: 50%; top: 50%; bottom: auto; margin: calc(var(--z) * -.5) 0 0 calc(var(--z) * -.5); font-size: calc(var(--z) * .13); }
+.gp-btn.cool { filter: grayscale(.9) brightness(.6); }
+#scrPlat.off .gp-btn, #scrPlat.off .gp-knob { filter: grayscale(.85) brightness(.65); }
+
+/* γρανάζι: ο παίκτης μετακινεί/μεγαλώνει τα κουμπιά όπου βολεύει το δάχτυλό του */
+.gp-gear { flex: none; width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: 50%; border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.08); color: #e9e3ff; font: 400 calc(var(--u) * 5.6) / 1 'Noto Sans', sans-serif; display: grid; place-items: center; padding: 0; }
+.gp-gear:active { background: rgba(255,255,255,.2); }
+.gp-edit { position: absolute; left: 50%; top: calc(var(--u) * 2.5); transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: calc(var(--u) * 1.6);
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 1.6) calc(var(--u) * 1.2) calc(var(--u) * 3.5); border-radius: 99px; white-space: nowrap;
+  background: rgba(20,10,44,.92); border: 1px solid rgba(255,182,39,.55); box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.gp-edit[hidden] { display: none; }
+.gp-edit-t { font: 700 calc(var(--u) * 4) 'Noto Sans', sans-serif; color: #ffe27a; margin-right: calc(var(--u) * 1); }
+.gp-edit button { height: calc(var(--u) * 8.4); min-width: calc(var(--u) * 8.4); padding: 0 calc(var(--u) * 2.6); border-radius: 99px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.1); color: #fff; font: 800 calc(var(--u) * 4.2) 'Noto Sans', sans-serif; }
+.gp-edit button.ok { background: #3fd35a; border-color: #3fd35a; color: #062b0e; }
+.gp-edit button:active { filter: brightness(1.3); }
+#scrPlat.edit .gp-top > *:not(.gp-gear) { visibility: hidden; }
+#scrPlat.edit .gp-gear { visibility: hidden; }
+#scrPlat.edit .gp-in::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px calc(var(--u) * 8)), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px calc(var(--u) * 8)); }
+#scrPlat.edit .gp-stick, #scrPlat.edit .gp-btn { z-index: 1; cursor: grab; outline: 2px dashed rgba(255,255,255,.35); outline-offset: calc(var(--u) * 1.2); }
+#scrPlat.edit .gp-sel { outline: 3px dashed #ffb627; }
+#scrPlat.edit .gp-drag { filter: brightness(1.15) drop-shadow(0 0 calc(var(--u) * 3) rgba(255,182,39,.6)); }
+#scrPlat.edit .gp-sub { visibility: hidden; }
 
 .fx-msg {
   position: fixed; left: 16px; right: 16px; top: 34%; text-align: center; pointer-events: none;

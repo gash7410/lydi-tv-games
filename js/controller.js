@@ -17,7 +17,7 @@
     ? 'Ακόμα συνδέεται… Έλεγξε ότι το κινητό έχει internet.'
     : 'Ακόμα συνδέεται… Βάλε το κινητό στο ίδιο Wi‑Fi με την τηλεόραση (όχι δεδομένα κινητής ή Wi‑Fi επισκεπτών).';
 
-  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrRun', '#scrPlat', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
+  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrRun', '#scrPlat', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
   const sendMsg = (m) => { if (conn && conn.open) try { conn.send(m); } catch (e) {} };
   function setConn(ok, t) { const c = $('#conn'); c.textContent = t; c.classList.toggle('ok', !!ok); }
 
@@ -116,6 +116,9 @@
     if (d.type === 'state') { st = d; render(); }
   }
 
+  // δοκιμές στον browser: controller.html?dev → window.__ctl (ψεύτικη σύνδεση + κατάσταση)
+  if (params.has('dev')) window.__ctl = { onData: (d) => onData(d), fake: (c) => { conn = c; } };
+
   function render() {
     const s = st;
     document.body.style.setProperty('--c', s.me.color.hex);
@@ -170,13 +173,17 @@
       return;
     }
     if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'joy') {
-      if ($('#scrJoy').hidden) { show('#scrJoy'); vibrate(30); }
-      $('#joyMsg').textContent = s.ctrl.active ? '' : (s.ctrl.label || '');
-      $('#joySub').textContent = s.ctrl.active ? 'Σύρε τον κύκλο για να κινηθείς' : (s.ctrl.sub || '');
-      $('#scrJoy').classList.toggle('off', !s.ctrl.active);
-      dashBtn.textContent = s.ctrl.btn || 'ΩΘΗΣΗ';
+      // οριζόντιο gamepad: αναλογικός μοχλός + ένα κουμπί (Διάστημα, Φούσκες, Σπρωξίματα)
+      gpSetMode('joy');
+      if ($('#scrPlat').hidden) { show('#scrPlat'); vibrate(30); }
+      $('#platScore').textContent = s.ctrl.scoreText || (s.score ? `Πόντοι: ${s.score.v}${s.score.of ? '/' + s.score.of : ''}` : '');
+      $('#platMsg').textContent = s.ctrl.active ? '' : (s.ctrl.label || '');
+      $('#platSub').textContent = s.ctrl.active ? '' : (s.ctrl.sub || '');
+      $('#platShoot').textContent = s.ctrl.btn || 'ΩΘΗΣΗ';
+      $('#platShoot').classList.remove('dim');
       dashCd = s.ctrl.cdMs || 1400;
-      if (!s.ctrl.active) joyReset();
+      $('#scrPlat').classList.toggle('off', !s.ctrl.active);
+      if (!s.ctrl.active) stickEnd();
       return;
     }
     if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'run') {
@@ -189,12 +196,16 @@
       return;
     }
     if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'plat') {
+      gpSetMode('plat');
       if ($('#scrPlat').hidden) { show('#scrPlat'); vibrate(30); }
       $('#platScore').textContent = s.ctrl.scoreText || '';
       $('#platMsg').textContent = s.ctrl.label || '';
       $('#platSub').textContent = s.ctrl.sub || '';
       $('#platShoot').textContent = s.ctrl.shoot || 'ΦΟΥΣΚΑ';
       $('#platShoot').classList.toggle('dim', !!s.ctrl.shootOff);
+      $('#platJump').textContent = s.ctrl.jump || 'ΠΗΔΑ';
+      $('#platExtra').textContent = s.ctrl.extra || '';
+      $('#platExtra').hidden = !s.ctrl.extra;
       $('#scrPlat').classList.toggle('off', !s.ctrl.active);
       return;
     }
@@ -243,80 +254,198 @@
   });
 
 
-  // ---------- ◀ ▶ + ΑΛΜΑ + ΦΟΥΣΚΑ (Φουσκοπάντα) ----------
-  // τα βελάκια στέλνουν την κατεύθυνση όσο είναι πατημένα (και ξανά κάθε 400ms, μήπως χαθεί μήνυμα)
-  const held = { L: new Set(), R: new Set() };
-  let platDir = 0, platTimer = null;
-  function platSend() {
-    const d = (held.R.size ? 1 : 0) - (held.L.size ? 1 : 0);
-    if (d !== platDir) { platDir = d; sendMsg({ type: 'move', d }); }
-    clearInterval(platTimer);
-    if (d) platTimer = setInterval(() => sendMsg({ type: 'move', d: platDir }), 400);
+  // ---------- οριζόντιο gamepad: μοχλός + 3 κουμπιά (Ζούγκλα, Φουσκοπάντα) ----------
+  // ο μοχλός στέλνει την κατεύθυνση όταν αλλάζει (και ξανά κάθε 400ms, μήπως χαθεί μήνυμα)
+  const stick = $('#gpStick'), gpKnob = $('#gpKnob');
+  const portrait = matchMedia('(orientation: portrait)');
+  let platDir = 0, platV = 0, platTimer = null, stickId = null;
+  // gpMode: 'plat' (κατευθύνσεις + 3 κουμπιά) ή 'joy' (αναλογικός μοχλός + 1 κουμπί)
+  let gpMode = 'plat', gpModeCb = null;
+  function gpSetMode(m) {
+    if (m === gpMode) return;
+    stickEnd(); gpMode = m;
+    $('#scrPlat').classList.toggle('one', m === 'joy');
+    $('#platJump').hidden = m === 'joy';
+    if (m === 'joy') $('#platExtra').hidden = true;
+    if (gpModeCb) gpModeCb(m);
   }
-  [['#platL', 'L'], ['#platR', 'R']].forEach(([sel, k]) => {
-    const b = $(sel);
-    b.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      try { b.setPointerCapture(e.pointerId); } catch (er) {}
-      held[k].add(e.pointerId); b.classList.add('down'); platSend(); vibrate(8);
-    });
-    const up = (e) => { held[k].delete(e.pointerId); if (!held[k].size) b.classList.remove('down'); platSend(); };
-    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
-    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  function arrows(d, v) {
+    stick.classList.toggle('l', d < 0); stick.classList.toggle('r', d > 0);
+    stick.classList.toggle('u', v < 0); stick.classList.toggle('d', v > 0);
+  }
+  function platSend(d, v) {
+    if (d === platDir && v === platV) return;
+    if (d !== platDir && d) vibrate(8);
+    platDir = d; platV = v; sendMsg({ type: 'move', d, v });
+    clearInterval(platTimer);
+    if (d || v) platTimer = setInterval(() => sendMsg({ type: 'move', d: platDir, v: platV }), 400);
+    arrows(d, v);
+  }
+  // αναλογικό: στέλνει x,y (-1..1) το πολύ κάθε 40ms
+  let gjv = { x: 0, y: 0 }, gjLast = 0, gjTimer = null;
+  function gjSend(force) {
+    const now = performance.now();
+    if (!force && now - gjLast < 40) {
+      if (!gjTimer) gjTimer = setTimeout(() => { gjTimer = null; gjSend(true); }, 40);
+      return;
+    }
+    gjLast = now; sendMsg({ type: 'joy', x: +gjv.x.toFixed(3), y: +gjv.y.toFixed(3) });
+  }
+  function stickMove(e) {
+    const r = stick.getBoundingClientRect(), R = r.width / 2;
+    let sx = e.clientX - (r.left + R), sy = e.clientY - (r.top + R);
+    // όταν το κινητό είναι όρθιο το χειριστήριο είναι γυρισμένο 90°: μετατροπή σε συντεταγμένες του χειριστηρίου
+    let dx = portrait.matches ? sy : sx, dy = portrait.matches ? -sx : sy;
+    const l = Math.hypot(dx, dy), m = R * 0.52;
+    if (l > m) { dx = (dx / l) * m; dy = (dy / l) * m; }
+    gpKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    const nx = dx / m, ny = dy / m;
+    if (gpMode === 'joy') {
+      gjv = { x: nx, y: ny }; gjSend();
+      arrows(nx > 0.4 ? 1 : nx < -0.4 ? -1 : 0, ny > 0.4 ? 1 : ny < -0.4 ? -1 : 0);
+      return;
+    }
+    platSend(nx > 0.35 ? 1 : nx < -0.35 ? -1 : 0, ny > 0.55 ? 1 : ny < -0.55 ? -1 : 0);
+  }
+  function stickEnd(e) {
+    if (e && e.pointerId !== stickId) return;
+    stickId = null; stick.classList.remove('held'); gpKnob.style.transform = '';
+    if (gpMode === 'joy') { arrows(0, 0); if (gjv.x || gjv.y) { gjv = { x: 0, y: 0 }; gjSend(true); } } else platSend(0, 0);
+  }
+  stick.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (stickId !== null || (gpMode === 'joy' && $('#scrPlat').classList.contains('off'))) return;
+    stickId = e.pointerId; stick.classList.add('held');
+    try { stick.setPointerCapture(e.pointerId); } catch (er) {}
+    stickMove(e);
   });
+  stick.addEventListener('pointermove', (e) => { if (e.pointerId === stickId) stickMove(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((t) => stick.addEventListener(t, stickEnd));
+  stick.addEventListener('contextmenu', (e) => e.preventDefault());
+  let dashReady = 0, dashCd = 1400;
   [['#platJump', 'jump', 15], ['#platShoot', 'dash', 25]].forEach(([sel, type, vib]) => {
     const b = $(sel);
     b.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      if (gpMode === 'joy') { // ένα κουμπί με χρόνο επαναφόρτισης (ΩΘΗΣΗ, ΒΟΜΒΑ, ΒΕΛΟΣ)
+        if ($('#scrPlat').classList.contains('off') || performance.now() < dashReady) return;
+        dashReady = performance.now() + dashCd;
+        b.classList.add('cool'); setTimeout(() => b.classList.remove('cool'), dashCd);
+      }
       sendMsg({ type });
       b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
       vibrate(vib);
     });
+    b.addEventListener('animationend', () => b.classList.remove('hit'));
     b.addEventListener('contextmenu', (e) => e.preventDefault());
   });
+  // τρίτο κουμπί: κρατιέται πατημένο (π.χ. «ΤΡΕΞΕ» στη Ζούγκλα) → extra on/off
+  {
+    const b = $('#platExtra'), ids = new Set();
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { b.setPointerCapture(e.pointerId); } catch (er) {}
+      if (!ids.size) { sendMsg({ type: 'extra', on: true }); vibrate(12); }
+      ids.add(e.pointerId); b.classList.add('down');
+    });
+    const up = (e) => {
+      if (!ids.delete(e.pointerId) || ids.size) return;
+      b.classList.remove('down'); sendMsg({ type: 'extra', on: false });
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((t) => b.addEventListener(t, up));
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
 
-  // ---------- joystick + ορμή (Σπρωξίματα) ----------
-  const joy = $('#joy'), knob = $('#knob'), dashBtn = $('#dashBtn');
-  let jd = null, lastJoy = 0, jv = { x: 0, y: 0 }, joyTimer = null;
-  function joySend(force) {
-    const now = performance.now();
-    if (!force && now - lastJoy < 40) {
-      if (!joyTimer) joyTimer = setTimeout(() => { joyTimer = null; joySend(true); }, 40);
-      return;
+  // ---------- γρανάζι: ο παίκτης στήνει μόνος του το χειριστήριο ----------
+  // κάθε στοιχείο έχει μετατόπιση (x,y ως κλάσμα πλάτους/ύψους του χειριστηριού) και μέγεθος s· σώζονται στο κινητό
+  {
+    const scr = $('#scrPlat'), gpIn = scr.querySelector('.gp-in');
+    const items = { stick: stick, extra: $('#platExtra'), jump: $('#platJump'), shoot: $('#platShoot') };
+    // ξεχωριστή διάταξη για 3 κουμπιά και για 1 κουμπί
+    let LKEY = 'tvp_gp_layout', lay = {};
+    function load() {
+      LKEY = gpMode === 'joy' ? 'tvp_gp_layout_joy' : 'tvp_gp_layout';
+      try { lay = JSON.parse(localStorage.getItem(LKEY)) || {}; } catch (er) { lay = {}; }
+      Object.keys(items).forEach(apply);
     }
-    lastJoy = now; sendMsg({ type: 'joy', x: +jv.x.toFixed(3), y: +jv.y.toFixed(3) });
+    gpModeCb = () => { if (editing) setEdit(false); load(); };
+    const get = (k) => lay[k] || (lay[k] = { x: 0, y: 0, s: 1 });
+    function apply(k) {
+      const el = items[k], o = lay[k];
+      el.style.translate = o && (o.x || o.y) ? `calc(var(--W) * ${o.x.toFixed(4)}) calc(var(--H) * ${o.y.toFixed(4)})` : '';
+      el.style.scale = o && o.s !== 1 ? String(o.s) : '';
+    }
+    const save = () => { try { localStorage.setItem(LKEY, JSON.stringify(lay)); } catch (er) {} };
+
+    // φυσική θέση του στοιχείου μέσα στο χειριστήριο (χωρίς τη μετατόπιση) — για να μη βγαίνει έξω
+    function natural(el) {
+      let x = 0, y = 0, n = el;
+      while (n && n !== gpIn) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+      return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+    }
+    function clamp(k) {
+      const el = items[k], o = get(k), W = gpIn.offsetWidth, H = gpIn.offsetHeight, top = scr.querySelector('.gp-top');
+      const n = natural(el), hw = (n.w * o.s) / 2, hh = (n.h * o.s) / 2;
+      const cx = n.x + n.w / 2 + o.x * W, cy = n.y + n.h / 2 + o.y * H;
+      const minY = top.offsetTop + top.offsetHeight * 0.6;
+      const ncx = Math.min(Math.max(cx, hw), W - hw), ncy = Math.min(Math.max(cy, minY + hh), H - hh);
+      o.x = (ncx - n.x - n.w / 2) / W; o.y = (ncy - n.y - n.h / 2) / H;
+    }
+
+    let editing = false, sel = 'stick', drag = null;
+    function select(k) {
+      sel = k;
+      Object.entries(items).forEach(([kk, el]) => el.classList.toggle('gp-sel', editing && kk === k));
+    }
+    function setEdit(on) {
+      editing = on; scr.classList.toggle('edit', on); $('#gpEdit').hidden = !on;
+      if (on) { stickEnd(); platSend(0, 0); } else save();
+      select(sel);
+    }
+    $('#gpGear').addEventListener('click', () => { vibrate(10); setEdit(true); });
+    $('#gpDone').addEventListener('click', () => { vibrate(10); setEdit(false); });
+    $('#gpReset').addEventListener('click', () => { lay = {}; Object.keys(items).forEach(apply); save(); vibrate(20); });
+    const resize = (f) => {
+      const o = get(sel); o.s = Math.round(Math.min(1.5, Math.max(0.6, o.s * f)) * 100) / 100;
+      clamp(sel); apply(sel); save(); vibrate(8);
+    };
+    $('#gpSmall').addEventListener('click', () => resize(1 / 1.1));
+    $('#gpBig').addEventListener('click', () => resize(1.1));
+
+    // στη ρύθμιση τα αγγίγματα πιάνονται εδώ (capture) και δεν φτάνουν στο παιχνίδι
+    scr.addEventListener('pointerdown', (e) => {
+      if (!editing) return;
+      const el = e.target.closest('.gp-stick, .gp-btn');
+      if (!el) return;
+      e.preventDefault(); e.stopPropagation();
+      const k = Object.keys(items).find((kk) => items[kk] === el);
+      const o = get(k);
+      select(k);
+      drag = { k, id: e.pointerId, sx: e.clientX, sy: e.clientY, x: o.x, y: o.y };
+      el.classList.add('gp-drag');
+      try { el.setPointerCapture(e.pointerId); } catch (er) {}
+      vibrate(8);
+    }, true);
+    scr.addEventListener('pointermove', (e) => {
+      if (!editing) return;
+      e.stopPropagation();
+      if (!drag || e.pointerId !== drag.id) return;
+      const sx = e.clientX - drag.sx, sy = e.clientY - drag.sy;
+      const dx = portrait.matches ? sy : sx, dy = portrait.matches ? -sx : sy; // γυρισμένο χειριστήριο
+      const o = get(drag.k);
+      o.x = drag.x + dx / gpIn.offsetWidth; o.y = drag.y + dy / gpIn.offsetHeight;
+      clamp(drag.k); apply(drag.k);
+    }, true);
+    const end = (e) => {
+      if (!editing) return;
+      e.stopPropagation();
+      if (!drag || e.pointerId !== drag.id) return;
+      items[drag.k].classList.remove('gp-drag'); drag = null; save();
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((t) => scr.addEventListener(t, end, true));
+    load();
+    window.addEventListener('resize', () => { if (editing) Object.keys(lay).forEach((k) => { clamp(k); apply(k); }); });
   }
-  function joyMove(e) {
-    const r = joy.getBoundingClientRect(), R = r.width / 2;
-    let dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R);
-    const l = Math.hypot(dx, dy), m = R * 0.62;
-    if (l > m) { dx = (dx / l) * m; dy = (dy / l) * m; }
-    knob.style.transform = `translate(${dx}px, ${dy}px)`;
-    jv = { x: dx / m, y: dy / m };
-    joySend();
-  }
-  function joyReset() {
-    jd = null; knob.style.transform = 'translate(0,0)';
-    if (jv.x || jv.y) { jv = { x: 0, y: 0 }; joySend(true); }
-  }
-  joy.addEventListener('pointerdown', (e) => {
-    if ($('#scrJoy').classList.contains('off')) return;
-    jd = e.pointerId; try { joy.setPointerCapture(e.pointerId); } catch (er) {}
-    joyMove(e);
-  });
-  joy.addEventListener('pointermove', (e) => { if (e.pointerId === jd) joyMove(e); });
-  joy.addEventListener('pointerup', (e) => { if (e.pointerId === jd) joyReset(); });
-  joy.addEventListener('pointercancel', (e) => { if (e.pointerId === jd) joyReset(); });
-  let dashReady = 0, dashCd = 1400;
-  dashBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if ($('#scrJoy').classList.contains('off') || performance.now() < dashReady) return;
-    dashReady = performance.now() + dashCd;
-    sendMsg({ type: 'dash' });
-    vibrate(35);
-    dashBtn.classList.add('cool');
-    setTimeout(() => dashBtn.classList.remove('cool'), dashCd);
-  });
 
   // ---------- 4 απαντήσεις («Ποιος είναι;») ----------
   let choiceQ = null, choiceSent = null;
