@@ -25,14 +25,26 @@
 
 <section id="lobby">
   <div class="lobby-left">
-    <div class="brand big">Lydi Show<span>TV Games</span></div>
+    <div class="lobby-head"><div class="brand big">Lydi Show<span>TV Games</span></div><div class="lobby-count" id="gCount"></div></div>
     <div class="games" id="games"></div>
-    <h1 id="gTitle">Μπαλάκι <span>στα ποτηράκια</span></h1>
-    <p class="tag" id="gTag"></p>
-    <ol class="steps">
-      <li>Σκάναρε τον QR και γράψε το όνομά σου</li>
-      <li id="gHow">Σύρε το μπαλάκι προς τα πάνω και άφησέ το</li>
-    </ol>
+  </div>
+  <div class="lobby-right">
+    <div class="qr-card">
+      <div id="qr"><div class="qr-wait">Φόρτωση…</div></div>
+      <div class="qr-txt">
+        <div class="code-label">Σκάναρε τον QR ή άνοιξε το χειριστήριο και γράψε τον κωδικό</div>
+        <div id="code">····</div>
+        <div id="netStatus"></div>
+      </div>
+    </div>
+    <div class="g-info">
+      <h1 id="gTitle">Μπαλάκι <span>στα ποτηράκια</span></h1>
+      <p class="tag" id="gTag"></p>
+      <ol class="steps">
+        <li>Σκάναρε τον QR και γράψε το όνομά σου</li>
+        <li id="gHow">Σύρε το μπαλάκι προς τα πάνω και άφησέ το</li>
+      </ol>
+    </div>
     <div class="slots" id="slots"></div>
     <div class="actions">
       <button id="btnStart" class="btn primary" disabled>Έναρξη</button>
@@ -40,14 +52,6 @@
       <button id="btnFull" class="btn">Πλήρης οθόνη</button>
     </div>
     <p class="hint" id="startHint"></p>
-  </div>
-  <div class="lobby-right">
-    <div class="qr-card">
-      <div id="qr"><div class="qr-wait">Φόρτωση…</div></div>
-      <div class="code-label">ή άνοιξε το χειριστήριο και γράψε τον κωδικό</div>
-      <div id="code">····</div>
-      <div id="netStatus"></div>
-    </div>
   </div>
 </section>
 
@@ -79,13 +83,16 @@
 <script src="js/game-longjump.js"></script>
 <script src="js/game-panda.js"></script>
 <script src="js/game-tomato.js"></script>
+<script src="js/game-bear.js"></script>
 <script src="js/game-hoops.js"></script>
 <script src="js/game-bubpanda.js"></script>
 <script src="js/game-bubbles.js"></script>
 <script src="js/game-space.js"></script>
+<script src="js/game-hunt.js"></script>
 <script src="js/game-jungle.js"></script>
 <script src="js/game-sumo.js"></script>
 <script src="js/game-who.js"></script>
+<script src="js/game-xeri.js"></script>
 <script src="js/tv.js"></script>
 <script src="js/updater.js"></script>
 </body>

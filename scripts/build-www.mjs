@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 const out = 'www';
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
-for (const f of ['index.html', 'controller.html', 'demo.html', 'css', 'js']) cpSync(f, `${out}/${f}`, { recursive: true });
+for (const f of ['index.html', 'controller.html', 'demo.html', 'css', 'js', 'img']) cpSync(f, `${out}/${f}`, { recursive: true });
 // αριθμός έκδοσης (ίδιος με το versionCode του APK) για τη σελίδα ελέγχου debug.html
 let ver = { code: 'dev' };
 try {

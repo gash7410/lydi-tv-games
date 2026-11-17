@@ -17,7 +17,7 @@
     ? 'Ακόμα συνδέεται… Έλεγξε ότι το κινητό έχει internet.'
     : 'Ακόμα συνδέεται… Βάλε το κινητό στο ίδιο Wi‑Fi με την τηλεόραση (όχι δεδομένα κινητής ή Wi‑Fi επισκεπτών).';
 
-  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrRun', '#scrPlat', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
+  function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrRun', '#scrPlat', '#scrChoice', '#scrCards'].forEach((s) => ($(s).hidden = s !== id)); }
   const sendMsg = (m) => { if (conn && conn.open) try { conn.send(m); } catch (e) {} };
   function setConn(ok, t) { const c = $('#conn'); c.textContent = t; c.classList.toggle('ok', !!ok); }
 
@@ -135,7 +135,9 @@
       $('#picker').replaceChildren(...TVP.GAMES.map((g) => {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'pick' + (g.id === s.game ? ' sel' : '');
-        b.textContent = g.title;
+        b.innerHTML = '<span class="th"></span><span class="nm"></span>';
+        b.querySelector('.th').style.backgroundImage = `url(img/covers/${g.id}.jpg)`;
+        b.querySelector('.nm').textContent = g.title.replace(/\u00AD/g, '');
         b.addEventListener('click', () => sendMsg({ type: 'pick', game: g.id }));
         return b;
       }));
@@ -151,6 +153,8 @@
     const skin = tossMode ? s.ctrl.skin || 'tomato' : '';
     $('#scrPad').classList.toggle('tomato', skin === 'tomato');
     $('#scrPad').classList.toggle('hoops', skin === 'hoops');
+    $('#scrPad').classList.toggle('bear', skin === 'bear');
+    $('#ball').dataset.food = skin === 'bear' ? s.ctrl.food || '' : '';
     if (tossMode) {
       if ($('#scrPad').hidden) { show('#scrPad'); resetBall(); vibrate(40); }
       $('#padName').textContent = s.me.name;
@@ -207,6 +211,11 @@
       $('#platExtra').textContent = s.ctrl.extra || '';
       $('#platExtra').hidden = !s.ctrl.extra;
       $('#scrPlat').classList.toggle('off', !s.ctrl.active);
+      return;
+    }
+    if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'cards') {
+      if ($('#scrCards').hidden) { show('#scrCards'); vibrate(30); }
+      renderCards(s.ctrl);
       return;
     }
     if (s.phase === 'play' && s.ctrl && s.ctrl.mode === 'choice') {
@@ -449,6 +458,117 @@
 
   // ---------- 4 απαντήσεις («Ποιος είναι;») ----------
   let choiceQ = null, choiceSent = null;
+  // ---------- Ξερή: τα φύλλα του παίκτη ----------
+  const SYM = { S: '♠', H: '♥', D: '♦', C: '♣' };
+  const rankOf = (c) => c.slice(0, -1), suitOf = (c) => c.slice(-1);
+  let cc = null, cardSel = null, cardHandKey = '', cardSent = -1;
+  // θέσεις συμβόλων (x%, y%) όπως στα αληθινά τραπουλόχαρτα· κάτω από τη μέση γυρίζουν ανάποδα
+  const PIPS = {
+    2: [[50, 18], [50, 82]], 3: [[50, 18], [50, 50], [50, 82]],
+    4: [[32, 18], [68, 18], [32, 82], [68, 82]], 5: [[32, 18], [68, 18], [50, 50], [32, 82], [68, 82]],
+    6: [[32, 18], [68, 18], [32, 50], [68, 50], [32, 82], [68, 82]],
+    7: [[32, 18], [68, 18], [50, 34], [32, 50], [68, 50], [32, 82], [68, 82]],
+    8: [[32, 18], [68, 18], [50, 34], [32, 50], [68, 50], [50, 66], [32, 82], [68, 82]],
+    9: [[32, 18], [68, 18], [32, 39], [68, 39], [50, 50], [32, 61], [68, 61], [32, 82], [68, 82]],
+    10: [[32, 18], [68, 18], [50, 29], [32, 39], [68, 39], [32, 61], [68, 61], [50, 71], [32, 82], [68, 82]],
+  };
+  const FACE = { J: 'Βαλές', Q: 'Ντάμα', K: 'Ρήγας' };
+  function paintCard(el, c) {
+    el.classList.toggle('red', !!c && 'HD'.includes(suitOf(c)));
+    el.classList.toggle('empty', !c);
+    el.replaceChildren();
+    if (!c) return;
+    const r = rankOf(c), sy = SYM[suitOf(c)], face = !!FACE[r];
+    el.classList.toggle('face', face);
+    el.classList.toggle('ace', r === 'A');
+    const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null) e.textContent = txt; return e; };
+    const corner = (cls) => { const k = mk('i', 'cn ' + cls); k.append(mk('b', '', r), mk('s', '', sy)); return k; };
+    el.append(corner('tl'), corner('br'));
+    if (face) {
+      const f = mk('i', 'fc');
+      f.append(mk('s', 'fs', sy), mk('b', 'fr', r), mk('small', 'fn', FACE[r]), mk('s', 'fs dn', sy));
+      el.append(f);
+    } else if (r === 'A') {
+      el.append(mk('i', 'pip ace', sy));
+    } else {
+      (PIPS[r] || []).forEach(([x, y]) => {
+        const p = mk('i', 'pip' + (y > 50 ? ' dn' : ''), sy);
+        p.style.left = x + '%'; p.style.top = y + '%';
+        el.append(p);
+      });
+    }
+  }
+  let cHintT = 0;
+  function cardHint(t) {
+    const h = $('#cardsHint');
+    h.textContent = t || ''; h.classList.remove('on'); void h.offsetWidth; h.classList.add('on');
+    clearTimeout(cHintT); cHintT = setTimeout(() => h.classList.remove('on'), 1800);
+  }
+  const cardTakes = (c) => !!(cc && cc.top && c && (rankOf(c) === 'J' || rankOf(c) === rankOf(cc.top)));
+  function cardsCanPlay() { return cc && cc.active && cardSent !== cc.tid; }
+  function renderCards(c) {
+    cc = c;
+    const key = c.hand.join(',');
+    if (!c.hand.includes(cardSel)) cardSel = null;
+    if (key !== cardHandKey) {
+      cardHandKey = key;
+      $('#hand').replaceChildren(...c.hand.map((code) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'pc'; b.dataset.c = code;
+        paintCard(b, code);
+        b.addEventListener('click', () => {
+          if (!cardsCanPlay()) { cardHint(cc && cc.turn ? `Παίζει: ${cc.turn.name}` : 'Περίμενε…'); return; }
+          cardSel = cardSel === code ? null : code; vibrate(10); cardsUi();
+        });
+        return b;
+      }));
+    }
+    $('#hand').dataset.n = c.hand.length;
+    const kids = [...$('#hand').children], mid = (kids.length - 1) / 2;
+    kids.forEach((b, i) => { const d = i - mid; b.style.setProperty('--a', (d * 5) + 'deg'); b.style.setProperty('--y', (d * d * 1.6) + '%'); b.style.zIndex = i + 1; });
+    const topEl = $('#cardsTop');
+    if (topEl.dataset.c !== (c.top || '')) {
+      topEl.dataset.c = c.top || ''; paintCard(topEl, c.top);
+      topEl.style.animation = 'none'; void topEl.offsetWidth; topEl.style.animation = '';
+    }
+    $('#cardsPileN').textContent = c.pileN ? `${c.pileN} ${c.pileN === 1 ? 'φύλλο' : 'φύλλα'}` : 'άδειο';
+    $('#scrCards').dataset.pile = Math.min(c.pileN || 0, 3);
+    $('#scrCards').dataset.deck = c.deckN > 12 ? 3 : c.deckN > 0 ? (c.deckN > 6 ? 2 : 1) : 0;
+    $('#cardsDeckN').textContent = c.deckN ? `${c.deckN} φύλλα` : 'τελείωσε';
+    $('#cardsScore').textContent = c.scoreText || '';
+    $('#cardsMsg').textContent = c.label || '';
+    $('#cardsMsg').style.color = c.active ? '#ffe27a' : c.turn ? c.turn.color : '';
+    $('#cardsSub').textContent = c.sub || '';
+    cardsUi();
+  }
+  function cardsUi() {
+    const on = cardsCanPlay();
+    $('#scrCards').classList.toggle('mine', !!on);
+    [...$('#hand').children].forEach((b) => b.classList.toggle('sel', b.dataset.c === cardSel));
+    const t = cardTakes(cardSel);
+    $('#btnThrow').classList.toggle('ready', !!(on && cardSel && !t));
+    $('#btnTake').classList.toggle('ready', !!(on && cardSel && t));
+    $('#btnThrow').classList.toggle('off', !on);
+    $('#btnTake').classList.toggle('off', !on);
+  }
+  function cardAct(act) {
+    if (!cardsCanPlay()) return cardHint(cc && cc.turn ? `Παίζει: ${cc.turn.name}` : 'Περίμενε…');
+    if (!cardSel) { vibrate(30); return cardHint('Διάλεξε πρώτα ένα φύλλο από τη βεντάλια'); }
+    const t = cardTakes(cardSel);
+    if (act === 'throw' && t) { vibrate([30, 40, 30]); return cardHint('Με αυτό το φύλλο τα παίρνεις! Πάτα «ΠΑΡΕ ΤΑ» ✋'); }
+    if (act === 'take' && !t) {
+      vibrate([30, 40, 30]);
+      return cardHint(cc.top ? 'Αυτό το φύλλο δεν τα παίρνει. Πάτα «ΠΕΤΑ» 🃏' : 'Το τραπέζι είναι άδειο. Πάτα «ΠΕΤΑ» 🃏');
+    }
+    sendMsg({ type: 'card', c: cardSel, act });
+    cardSent = cc.tid; vibrate(act === 'take' ? [40, 30, 60] : 25);
+    const el = [...$('#hand').children].find((b) => b.dataset.c === cardSel);
+    if (el) el.classList.add('gone');
+    cardSel = null; cardsUi();
+  }
+  $('#btnThrow').addEventListener('click', () => cardAct('throw'));
+  $('#btnTake').addEventListener('click', () => cardAct('take'));
+
   function renderChoice(c) {
     const box = $('#choices');
     if (choiceQ !== c.q) {

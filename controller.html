@@ -37,8 +37,10 @@
   <p id="waitSub" class="sub"></p>
   <div id="gameNow" class="game-now"></div>
   <div id="picker" class="picker" hidden></div>
-  <button id="btnStart" class="btn primary" hidden>Έναρξη παιχνιδιού</button>
-  <button id="btnLobby" class="btn" hidden>Νέοι παίκτες</button>
+  <div class="wait-end">
+    <button id="btnStart" class="btn primary" hidden>Έναρξη παιχνιδιού</button>
+    <button id="btnLobby" class="btn" hidden>Νέοι παίκτες</button>
+  </div>
 </section>
 
 <section id="scrPad" class="scr pad-scr" hidden>
@@ -99,6 +101,33 @@
   <p id="choiceMsg" class="joy-msg"></p>
   <div id="choices" class="choices"></div>
   <p id="choiceSub" class="play-sub"></p>
+</section>
+
+<section id="scrCards" class="scr play-scr gp xr" hidden>
+  <div class="gp-in xr-in">
+    <div class="xr-top"><b class="pName"></b><span id="cardsMsg" class="xr-msg"></span><span id="cardsScore" class="xr-score"></span></div>
+    <div class="xr-body">
+      <div class="xr-table">
+        <div class="xr-slot">
+          <span class="xr-lbl">Στο τραπέζι</span>
+          <div class="xr-pile"><i class="xr-under"></i><i class="xr-under u2"></i><div id="cardsTop" class="pc"></div></div>
+          <b id="cardsPileN" class="xr-cnt"></b>
+        </div>
+        <div class="xr-slot deck">
+          <span class="xr-lbl">Τράπουλα</span>
+          <div class="xr-deck"><i class="pc back"></i><i class="pc back"></i><i class="pc back"></i></div>
+          <b id="cardsDeckN" class="xr-cnt"></b>
+        </div>
+      </div>
+      <div id="hand" class="hand"></div>
+      <div class="xr-btns">
+        <button id="btnThrow" class="cbtn throw" type="button"><i>🃏</i>ΠΕΤΑ</button>
+        <button id="btnTake" class="cbtn take" type="button"><i>✋</i>ΠΑΡΕ ΤΑ</button>
+      </div>
+    </div>
+    <p id="cardsSub" class="xr-sub"></p>
+    <div id="cardsHint" class="xr-hint"></div>
+  </div>
 </section>
 
 <div id="fxMsg" class="fx-msg"></div>
