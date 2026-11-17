@@ -193,6 +193,8 @@
       $('#platScore').textContent = s.ctrl.scoreText || '';
       $('#platMsg').textContent = s.ctrl.label || '';
       $('#platSub').textContent = s.ctrl.sub || '';
+      $('#platShoot').textContent = s.ctrl.shoot || 'ΦΟΥΣΚΑ';
+      $('#platShoot').classList.toggle('dim', !!s.ctrl.shootOff);
       $('#scrPlat').classList.toggle('off', !s.ctrl.active);
       return;
     }

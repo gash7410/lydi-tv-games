@@ -154,6 +154,7 @@ input:focus { outline: none; border-color: #ffc93d; }
 .plat-btn.jump { background: linear-gradient(180deg, #a6f08a 0%, #43b84a 45%, #237a2c 100%); box-shadow: 0 9px 0 #17521d; }
 .plat-btn.shoot { background: radial-gradient(circle at 35% 30%, #d9f6ff 0%, #4fc3ff 45%, #1d6fb0 100%); box-shadow: 0 9px 0 #134a78; }
 .plat-btn.hit { animation: hit .12s ease-out; }
+#scrPlat .plat-btn.dim { filter: grayscale(.9) brightness(.65); font-size: 80%; }
 #scrPlat.off .plat-btn { filter: grayscale(.85) brightness(.7); }
 
 .fx-msg {
