@@ -12,6 +12,10 @@
   $('#inName').value = localStorage.getItem('tvp_name') || '';
 
   let peer = null, conn = null, code = '', name = '', joined = false, st = null, retry = 0;
+  let stage = 'server', hintT = null; // server: δεν απαντά ο server PeerJS · tv: δεν ανοίγει το κανάλι προς την τηλεόραση
+  const hintText = () => stage === 'server'
+    ? 'Ακόμα συνδέεται… Έλεγξε ότι το κινητό έχει internet.'
+    : 'Ακόμα συνδέεται… Βάλε το κινητό στο ίδιο Wi‑Fi με την τηλεόραση (όχι δεδομένα κινητής ή Wi‑Fi επισκεπτών).';
 
   function show(id) { ['#scrJoin', '#scrWait', '#scrPad', '#scrTap', '#scrJoy', '#scrRun', '#scrPlat', '#scrChoice'].forEach((s) => ($(s).hidden = s !== id)); }
   const sendMsg = (m) => { if (conn && conn.open) try { conn.send(m); } catch (e) {} };
@@ -24,8 +28,14 @@
     if (code.length !== 4 || !name) { $('#joinErr').textContent = 'Γράψε τον 4ψήφιο κωδικό και το όνομά σου.'; return; }
     localStorage.setItem('tvp_code', code); localStorage.setItem('tvp_name', name);
     $('#joinErr').textContent = '';
+    if (!window.Peer || !window.RTCPeerConnection) {
+      $('#joinErr').textContent = 'Αυτός ο browser δεν υποστηρίζει τη σύνδεση. Άνοιξε τη σελίδα σε Chrome ή Safari (όχι μέσα από την εφαρμογή σάρωσης QR).';
+      return;
+    }
     $('#btnJoin').disabled = true; $('#btnJoin').textContent = 'Σύνδεση…';
-    joined = true;
+    joined = true; retry = 0; stage = 'server';
+    clearTimeout(hintT);
+    hintT = setTimeout(() => { if (joined && !st) $('#joinErr').textContent = hintText(); }, 12000);
     connect();
     wakeLock();
   });
@@ -33,23 +43,31 @@
   function connect() {
     setConn(false, 'σύνδεση…');
     if (!peer || peer.destroyed) {
-      peer = new Peer(TVP.peerOptions);
+      try { peer = new Peer(TVP.peerOptions); } catch (e) { return fail('Δεν ήταν δυνατή η σύνδεση σε αυτόν τον browser. Δοκίμασε σε Chrome ή Safari.'); }
       peer.on('open', openConn);
       peer.on('error', (e) => {
         if (e.type === 'peer-unavailable') return fail('Δεν βρέθηκε τηλεόραση με κωδικό ' + code + '. Έλεγξε τον κωδικό.');
         scheduleRetry();
       });
       peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
-    } else if (peer.open) openConn();
+    } else if (peer.open) return openConn();
+    // αν ο server δεν απαντήσει, ξαναφτιάξε το peer αντί να περιμένεις για πάντα
+    const myPeer = peer;
+    setTimeout(() => {
+      if (joined && myPeer === peer && !myPeer.open) { try { myPeer.destroy(); } catch (e) {} peer = null; scheduleRetry(); }
+    }, 10000);
   }
 
   function openConn() {
+    if (!joined) return;
+    stage = 'tv';
     if (conn) try { conn.close(); } catch (e) {}
     conn = peer.connect(TVP.PREFIX + code, { reliable: true, serialization: 'json' });
     const myConn = conn;
     const to = setTimeout(() => { if (!myConn.open) scheduleRetry(); }, 9000);
     conn.on('open', () => {
-      clearTimeout(to); retry = 0;
+      clearTimeout(to); retry = 0; clearTimeout(hintT);
+      $('#joinErr').textContent = '';
       setConn(true, 'συνδεδεμένο');
       conn.send({ type: 'join', cid, name });
     });
@@ -62,13 +80,19 @@
   function scheduleRetry() {
     if (!joined || retryT) return;
     retry++;
-    if (retry > 6 && !st) return fail('Δεν ήταν δυνατή η σύνδεση. Δοκίμασε ξανά.');
+    if (retry > 3 && !st) {
+      return fail(stage === 'server'
+        ? 'Δεν ήταν δυνατή η σύνδεση στον server. Έλεγξε ότι το κινητό έχει internet και δοκίμασε ξανά.'
+        : 'Το κινητό δεν μπόρεσε να φτάσει στην τηλεόραση. Σύνδεσέ το στο ίδιο Wi‑Fi με την τηλεόραση (όχι δεδομένα κινητής ή Wi‑Fi επισκεπτών) και δοκίμασε ξανά.');
+    }
     setConn(false, 'επανασύνδεση…');
     retryT = setTimeout(() => { retryT = null; connect(); }, Math.min(1000 * retry, 4000));
   }
 
   function fail(msg) {
-    joined = false; retry = 0;
+    joined = false; retry = 0; clearTimeout(hintT);
+    if (retryT) { clearTimeout(retryT); retryT = null; }
+    if (conn) { const c = conn; conn = null; try { c.close(); } catch (e) {} }
     show('#scrJoin');
     $('#joinErr').textContent = msg;
     $('#btnJoin').disabled = false; $('#btnJoin').textContent = 'Μπες στο παιχνίδι';
