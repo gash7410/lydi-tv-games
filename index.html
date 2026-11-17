@@ -17,7 +17,10 @@
 <div id="hud" hidden>
   <div class="hud-top">
     <div class="brand">Lydi Show<span>TV Games</span></div>
-    <div class="room">Δωμάτιο <b id="hudCode">····</b></div>
+    <div class="hud-r">
+      <div class="room">Δωμάτιο <b id="hudCode">····</b></div>
+      <button id="btnQuit" class="quit-btn" type="button" aria-label="Έξοδος από το παιχνίδι"><svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Έξοδος</span></button>
+    </div>
   </div>
   <div id="banner"></div>
   <div id="playersBar"></div>
@@ -52,6 +55,18 @@
       <button id="btnFull" class="btn">Πλήρης οθόνη</button>
     </div>
     <p class="hint" id="startHint"></p>
+  </div>
+</section>
+
+<section id="quit" hidden>
+  <div class="over-card quit-card">
+    <div class="trophy">🚪</div>
+    <div class="quit-t">Έξοδος από το παιχνίδι;</div>
+    <p class="quit-s">Το παιχνίδι σταματά και γυρνάτε στο μενού με τα παιχνίδια.</p>
+    <div class="actions">
+      <button id="btnQuitYes" class="btn primary">Ναι, στο μενού</button>
+      <button id="btnQuitNo" class="btn">Συνέχεια</button>
+    </div>
   </div>
 </section>
 
@@ -90,6 +105,7 @@
 <script src="js/game-space.js"></script>
 <script src="js/game-hunt.js"></script>
 <script src="js/game-jungle.js"></script>
+<script src="js/game-ball.js"></script>
 <script src="js/game-sumo.js"></script>
 <script src="js/game-who.js"></script>
 <script src="js/game-xeri.js"></script>

@@ -393,3 +393,35 @@ input:focus { outline: none; border-color: #ffc93d; }
   border-radius: calc(var(--u) * 4); background: rgba(10,6,25,.92); border: 2px solid #ffe27a; color: #fff; text-align: center;
   font: 800 calc(var(--u) * 5.4)/1.25 'Noto Sans', sans-serif; opacity: 0; pointer-events: none; z-index: 60; transition: opacity .3s, transform .3s; }
 .xr-hint.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+/* ---------- κουμπί «Έξοδος» και παράθυρο επιβεβαίωσης ---------- */
+.top-r { display: flex; align-items: center; gap: 8px; }
+.exit-btn {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; cursor: pointer;
+  font: 800 13px 'Noto Sans', sans-serif; color: #fff; padding: 6px 12px 6px 9px; border-radius: 99px;
+  background: rgba(255,77,94,.22); border: 1px solid rgba(255,120,130,.55);
+}
+.exit-btn svg { width: 18px; height: 18px; }
+.exit-btn:active { background: rgba(255,77,94,.5); }
+.gp-top .exit-btn, .xr-top .exit-btn {
+  font-size: calc(var(--u) * 3.6); padding: calc(var(--u) * 1.4) calc(var(--u) * 3) calc(var(--u) * 1.4) calc(var(--u) * 2.2); gap: calc(var(--u) * 1.4);
+}
+.gp-top .exit-btn svg, .xr-top .exit-btn svg { width: calc(var(--u) * 5); height: calc(var(--u) * 5); }
+#scrPlat.edit .gp-top .exit-btn { visibility: hidden; }
+.exit-dlg { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(6,3,18,.72); backdrop-filter: blur(4px); }
+.exit-card {
+  width: min(340px, 100%); text-align: center; padding: 22px 20px 18px; border-radius: 22px;
+  background: linear-gradient(180deg, #2c1760, #170c36); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.exit-ic { font-size: 40px; line-height: 1; }
+.exit-card h2 { font: 700 22px 'Comfortaa', sans-serif; }
+.exit-card p { color: #cfc8ea; font-size: 15px; line-height: 1.4; margin-bottom: 6px; }
+.exit-card .btn { width: 100%; }
+/* στις οριζόντιες οθόνες χειριστηρίου (όρθιο κινητό με γυρισμένο gamepad) γυρίζει και το παράθυρο */
+@media (orientation: portrait) {
+  body:has(.gp:not([hidden])) .exit-card { transform: rotate(90deg); width: min(340px, calc(100vh - 40px)); }
+}
+.top .brand, .conn { white-space: nowrap; }
+.top { gap: 8px; }
+@media (max-width: 400px) { .top .brand { font-size: 17px; } .conn { padding: 4px 8px; font-size: 11px; } .top .exit-btn { padding: 6px 10px 6px 8px; } }

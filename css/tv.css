@@ -155,3 +155,16 @@ h1 span { display: block; color: #ff4d5e; font-size: .72em; margin-top: .6vh; }
 .upd-msg.ok { color: #9be7b4; }
 .upd-msg.warn { color: #ffd76a; }
 .upd-msg.err { color: #ff9a9a; }
+
+/* ---------- κουμπί «Έξοδος» στο παιχνίδι + επιβεβαίωση ---------- */
+.hud-r { display: flex; align-items: center; gap: 1.4vh; }
+.quit-btn {
+  pointer-events: auto; display: inline-flex; align-items: center; gap: .8vh; cursor: pointer;
+  font: 800 2vh 'Noto Sans', sans-serif; color: #fff; padding: .7vh 1.8vh .7vh 1.3vh; border-radius: 99px;
+  background: rgba(0,0,0,.4); border: .2vh solid rgba(255,255,255,.28); opacity: .8; transition: transform .15s, background .15s, opacity .15s;
+}
+.quit-btn svg { width: 2.6vh; height: 2.6vh; }
+.quit-btn:hover, .quit-btn:focus-visible, .quit-btn:focus { opacity: 1; background: #e5394b; border-color: #fff; transform: scale(1.08); outline: none; box-shadow: 0 0 0 .4vh rgba(255,255,255,.35); }
+#quit { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(8,4,24,.7); }
+.quit-t { font: 700 4vh 'Comfortaa', sans-serif; margin: .6vh 0 1vh; }
+.quit-s { color: #cfc8ea; font-size: 2.2vh; margin-bottom: 2.4vh; }

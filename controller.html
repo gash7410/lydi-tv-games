@@ -14,7 +14,7 @@
 <body>
 <header class="top">
   <div class="brand">Lydi<span>TV Games</span></div>
-  <div id="conn" class="conn">εκτός σύνδεσης</div>
+  <div class="top-r"><div id="conn" class="conn">εκτός σύνδεσης</div><button class="exit-btn" type="button" aria-label="Έξοδος" hidden><svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Έξοδος</span></button></div>
 </header>
 
 <section id="scrJoin" class="scr">
@@ -73,7 +73,7 @@
 
 <section id="scrPlat" class="scr play-scr gp" hidden>
   <div class="gp-in">
-    <div class="gp-top"><b class="pName"></b><span id="platMsg" class="gp-msg"></span><span id="platScore" class="gp-score"></span><button id="gpGear" class="gp-gear" type="button" aria-label="Ρύθμιση κουμπιών">⚙</button></div>
+    <div class="gp-top"><button class="exit-btn" type="button" aria-label="Έξοδος" hidden><svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Έξοδος</span></button><b class="pName"></b><span id="platMsg" class="gp-msg"></span><span id="platScore" class="gp-score"></span><button id="gpGear" class="gp-gear" type="button" aria-label="Ρύθμιση κουμπιών">⚙</button></div>
       <div id="gpEdit" class="gp-edit" hidden>
         <span class="gp-edit-t">✋ Σύρε τα κουμπιά όπου σε βολεύει</span>
         <button id="gpSmall" type="button" aria-label="Μικρότερο">−</button><button id="gpBig" type="button" aria-label="Μεγαλύτερο">+</button>
@@ -105,7 +105,7 @@
 
 <section id="scrCards" class="scr play-scr gp xr" hidden>
   <div class="gp-in xr-in">
-    <div class="xr-top"><b class="pName"></b><span id="cardsMsg" class="xr-msg"></span><span id="cardsScore" class="xr-score"></span></div>
+    <div class="xr-top"><button class="exit-btn" type="button" aria-label="Έξοδος" hidden><svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Έξοδος</span></button><b class="pName"></b><span id="cardsMsg" class="xr-msg"></span><span id="cardsScore" class="xr-score"></span></div>
     <div class="xr-body">
       <div class="xr-table">
         <div class="xr-slot">
@@ -133,6 +133,15 @@
 <div id="fxMsg" class="fx-msg"></div>
 <div id="flash"></div>
 
+<div id="exitDlg" class="exit-dlg" hidden>
+  <div class="exit-card">
+    <div class="exit-ic">🚪</div>
+    <h2 id="exitTitle">Έξοδος;</h2>
+    <p id="exitText"></p>
+    <button id="exitYes" class="btn primary" type="button">Ναι, έξοδος</button>
+    <button id="exitNo" class="btn" type="button">Συνέχεια</button>
+  </div>
+</div>
 <script src="js/vendor/peerjs.min.js"></script>
 <script src="js/common.js"></script>
 <script src="js/controller.js"></script>

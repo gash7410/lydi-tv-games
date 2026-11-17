@@ -97,7 +97,33 @@
     $('#joinErr').textContent = msg;
     $('#btnJoin').disabled = false; $('#btnJoin').textContent = 'Μπες στο παιχνίδι';
     setConn(false, 'εκτός σύνδεσης');
+    st = null; exitBtns(false); $('#exitDlg').hidden = true;
   }
+
+  // ---------- έξοδος από το παιχνίδι ----------
+  // Παίκτης 1 στη διάρκεια του παιχνιδιού: τελειώνει το παιχνίδι για όλους και γυρνάνε στο μενού.
+  // Οι υπόλοιποι (ή οποιοσδήποτε εκτός παιχνιδιού): βγαίνουν από το δωμάτιο.
+  const exitEnds = () => st && st.host && (st.phase === 'play' || st.phase === 'over');
+  function exitBtns(on) { document.querySelectorAll('.exit-btn').forEach((b) => (b.hidden = !on)); }
+  document.querySelectorAll('.exit-btn').forEach((b) => b.addEventListener('click', () => {
+    if (!st) return;
+    const ends = exitEnds();
+    $('#exitTitle').textContent = ends ? 'Τέλος παιχνιδιού;' : 'Φεύγεις;';
+    $('#exitText').textContent = ends
+      ? 'Το παιχνίδι σταματά για όλους και γυρνάτε στο μενού με τα παιχνίδια.'
+      : st.phase === 'play' ? 'Θα βγεις από το παιχνίδι. Οι άλλοι συνεχίζουν χωρίς εσένα.' : 'Θα βγεις από το δωμάτιο της τηλεόρασης.';
+    $('#exitYes').textContent = ends ? 'Ναι, στο μενού' : 'Ναι, φεύγω';
+    $('#exitDlg').hidden = false;
+    vibrate(15);
+  }));
+  $('#exitNo').addEventListener('click', () => ($('#exitDlg').hidden = true));
+  $('#exitDlg').addEventListener('click', (e) => { if (e.target.id === 'exitDlg') $('#exitDlg').hidden = true; });
+  $('#exitYes').addEventListener('click', () => {
+    $('#exitDlg').hidden = true;
+    if (exitEnds()) return sendMsg({ type: 'quit' });
+    sendMsg({ type: 'leave' });
+    setTimeout(() => { fail(''); setConn(false, 'εκτός σύνδεσης'); }, 150);
+  });
 
   function onData(d) {
     if (!d || typeof d !== 'object') return;
@@ -121,6 +147,7 @@
 
   function render() {
     const s = st;
+    exitBtns(true);
     document.body.style.setProperty('--c', s.me.color.hex);
     $('#myName').textContent = s.me.name;
     $('#myAv').textContent = s.me.name.slice(0, 1).toUpperCase();

@@ -137,6 +137,8 @@
       case 'join': return join(conn, d);
       case 'start': if (p && isHost(p) && (S.phase === 'lobby' || S.phase === 'over')) startGame(); return;
       case 'lobby': if (p && isHost(p) && S.phase === 'over') toLobby(); return;
+      case 'quit': if (p && isHost(p) && (S.phase === 'play' || S.phase === 'over')) { toLobby(); banner(`Το παιχνίδι σταμάτησε (${p.name})`); } return;
+      case 'leave': try { conn.close(); } catch (e) {} onClose(conn); return;
       case 'pick': if (p && isHost(p) && (S.phase === 'lobby' || S.phase === 'over')) pickGame(d.game); return;
       case 'pong': if (p && typeof d.t === 'number') { const r = performance.now() - d.t; if (r >= 0 && r < 3000) p.rtt = p.rtt == null ? r : p.rtt * 0.7 + r * 0.3; } return;
       case 'tap': case 'jump': case 'move': case 'joy': case 'dash': case 'ans': case 'toss': case 'card':
@@ -297,6 +299,7 @@
   }
 
   function toLobby() {
+    $('#quit').hidden = true;
     S.phase = 'lobby'; S.winner = null;
     S.players = S.players.filter((p) => p.connected);
     S.players.forEach((p) => (p.cups = []));
@@ -366,6 +369,34 @@
   $('#btnLobby').addEventListener('click', toLobby);
 
   // πλοήγηση με τα βελάκια του τηλεχειριστηρίου Android TV (χωρική: πάει στο πιο κοντινό κουμπί προς τα εκεί)
+  // ---------- έξοδος από το παιχνίδι (κουμπί στο πάνω μέρος ή «Πίσω» του τηλεχειριστηρίου) ----------
+  function askQuit() {
+    if (S.phase !== 'play') return;
+    $('#quit').hidden = false; $('#btnQuitNo').focus();
+  }
+  function closeQuit() { $('#quit').hidden = true; $('#btnQuit').blur(); }
+  $('#btnQuit').addEventListener('click', askQuit);
+  $('#btnQuitYes').addEventListener('click', toLobby);
+  $('#btnQuitNo').addEventListener('click', closeQuit);
+  // Επιστρέφει true αν το «Πίσω» χειρίστηκε εδώ· αλλιώς (στο μενού) η εφαρμογή κλείνει κανονικά.
+  window.tvBack = function () {
+    if (!$('#quit').hidden) { closeQuit(); return true; }
+    if (S.phase === 'play') { askQuit(); return true; }
+    if (S.phase === 'over') { toLobby(); return true; }
+    return false;
+  };
+  addEventListener('keydown', (e) => {
+    if (['Escape', 'Backspace', 'GoBack', 'BrowserBack'].includes(e.key) && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
+      if (window.tvBack()) e.preventDefault();
+      return;
+    }
+    // στο παιχνίδι, ΟΚ ή βελάκι στο τηλεχειριστήριο φέρνει το κουμπί «Έξοδος»
+    if (S.phase === 'play' && $('#quit').hidden && ['Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (document.activeElement !== $('#btnQuit')) { e.preventDefault(); $('#btnQuit').focus(); }
+      return;
+    }
+  });
+
   addEventListener('keydown', (e) => {
     const dir = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd' }[e.key];
     if (!dir) return;
@@ -404,6 +435,7 @@
     panda: '<svg viewBox="0 0 64 64"><path d="M8 2q6 14 22 20" fill="none" stroke="#3e8a2a" stroke-width="3.5" stroke-linecap="round"/><circle cx="22" cy="24" r="6" fill="#1f1d2a"/><circle cx="44" cy="24" r="6" fill="#1f1d2a"/><circle cx="33" cy="37" r="16" fill="#fff" stroke="#1c1a2b" stroke-width="3"/><ellipse cx="26" cy="36" rx="4.5" ry="6" fill="#1f1d2a" transform="rotate(30 26 36)"/><ellipse cx="40" cy="36" rx="4.5" ry="6" fill="#1f1d2a" transform="rotate(-30 40 36)"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="41" cy="35" r="1.6" fill="#fff"/><ellipse cx="33" cy="44" rx="3" ry="2" fill="#1f1d2a"/><rect x="50" y="30" width="6" height="30" rx="2" fill="#7cc84a" stroke="#1c1a2b" stroke-width="2.5"/><path d="M50 40h6M50 50h6" stroke="#3d7a24" stroke-width="2"/><path d="M56 32q6-4 7 2" fill="#5fb83a"/></svg>',
     longjump: '<svg viewBox="0 0 64 64"><rect x="2" y="48" width="30" height="10" fill="#d65a3a" stroke="#1c1a2b" stroke-width="3"/><rect x="26" y="48" width="5" height="10" fill="#fff" stroke="#1c1a2b" stroke-width="2"/><rect x="31" y="48" width="31" height="10" fill="#f0d49b" stroke="#1c1a2b" stroke-width="3"/><path d="M10 40q20-34 44 4" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 4"/><path d="M33 26l9 5M35 30l4 9" stroke="#1c1a2b" stroke-width="4" stroke-linecap="round"/><rect x="25" y="13" width="10" height="14" rx="4" fill="#3da9ff" stroke="#1c1a2b" stroke-width="3" transform="rotate(-25 30 20)"/><circle cx="26" cy="9" r="5.5" fill="#ffd9b3" stroke="#1c1a2b" stroke-width="3"/></svg>',
     jungle: '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="8" fill="#5ec4ff"/><circle cx="12" cy="10" r="14" fill="#2eb534" stroke="#1d6b1c" stroke-width="2"/><circle cx="36" cy="4" r="14" fill="#2eb534" stroke="#1d6b1c" stroke-width="2"/><circle cx="60" cy="10" r="13" fill="#2eb534" stroke="#1d6b1c" stroke-width="2"/><rect x="42" y="16" width="9" height="34" fill="#e9b25e" stroke="#3a2212" stroke-width="2"/><rect x="0" y="48" width="64" height="16" fill="#eabf72"/><rect x="0" y="46" width="64" height="5" fill="#4fcf32" stroke="#1d6a14" stroke-width="1.5"/><circle cx="22" cy="24" r="7.5" fill="#ffd3a8" stroke="#3a2212" stroke-width="2"/><path d="M14.5 22q2-9 13-6l-1 4-3-2-1 3-3-3-2 3z" fill="#5b2d12" stroke="#3a2212" stroke-width="1.5"/><path d="M14.6 23q7-4 15-1v2q-8-2-15 1z" fill="#ff5a6e"/><circle cx="25" cy="25" r="1.8" fill="#1b1020"/><path d="M15 31h13l2 12H13z" fill="#ff5a6e" stroke="#3a2212" stroke-width="2" stroke-linejoin="round"/><path d="M50 40q6-3 8 2-3 3-8-2z" fill="#ffd92e" stroke="#3a2212" stroke-width="1.5"/></svg>',
+    ball: '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="8" fill="#5ec4ff"/><rect y="48" width="64" height="16" fill="#d8995a"/><rect y="46" width="64" height="5" fill="#5fd040" stroke="#2a7a24" stroke-width="1.5"/><g transform="translate(46 38)"><rect x="-8" y="-4" width="16" height="12" rx="2" fill="#9a5cff" stroke="#2a1830" stroke-width="1.8"/><rect x="-9.5" y="-8" width="19" height="5" rx="1.5" fill="#b48aff" stroke="#2a1830" stroke-width="1.8"/><rect x="-1.8" y="-8" width="3.6" height="16" fill="#7dff9a"/><path d="M0-8q-7-8-8 0zM0-8q7-8 8 0z" fill="#7dff9a" stroke="#2a1830" stroke-width="1.5"/></g><circle cx="22" cy="33" r="14" fill="#f0544f" stroke="#2a1830" stroke-width="2.5"/><ellipse cx="16" cy="26" rx="4" ry="2.4" fill="#fff" opacity=".75" transform="rotate(-35 16 26)"/><ellipse cx="18" cy="31" rx="3.2" ry="4.2" fill="#fff" stroke="#2a1830" stroke-width="1"/><ellipse cx="27" cy="31" rx="3.2" ry="4.2" fill="#fff" stroke="#2a1830" stroke-width="1"/><circle cx="18.6" cy="31.8" r="2.3" fill="#1a1030"/><circle cx="27.6" cy="31.8" r="2.3" fill="#1a1030"/><circle cx="17.8" cy="30.6" r=".9" fill="#fff"/><circle cx="26.8" cy="30.6" r=".9" fill="#fff"/><ellipse cx="14.5" cy="36.5" rx="2.2" ry="1.3" fill="#ff8aa8"/><ellipse cx="30.5" cy="36.5" rx="2.2" ry="1.3" fill="#ff8aa8"/><path d="M19.5 37.5q1.3 2 3 .3 1.7 1.7 3-.3" fill="none" stroke="#2a1830" stroke-width="1.4" stroke-linecap="round"/></svg>',
     space: '<svg viewBox="0 0 64 64" shape-rendering="crispEdges"><rect width="64" height="64" rx="8" fill="#07031a"/><g fill="#fff"><rect x="8" y="10" width="2" height="2"/><rect x="52" y="30" width="2" height="2"/><rect x="20" y="40" width="2" height="2"/></g><g fill="#5dff8a"><rect x="22" y="8" width="4" height="4"/><rect x="38" y="8" width="4" height="4"/><rect x="18" y="12" width="28" height="12"/><rect x="14" y="16" width="4" height="12"/><rect x="46" y="16" width="4" height="12"/></g><g fill="#120a26"><rect x="24" y="16" width="4" height="4"/><rect x="36" y="16" width="4" height="4"/></g><rect x="31" y="30" width="2" height="8" fill="#ffe36b"/><g fill="#3da9ff"><rect x="30" y="40" width="4" height="4"/><rect x="26" y="44" width="12" height="8"/><rect x="20" y="50" width="24" height="6"/></g><rect x="30" y="46" width="4" height="4" fill="#6ff3ff"/><g fill="#ff9a2e"><rect x="22" y="56" width="4" height="4"/><rect x="38" y="56" width="4" height="4"/></g></svg>',
     hunt: '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="8" fill="#86c3ec"/><rect y="44" width="64" height="20" fill="#3d7f9a"/><path d="M0 46q8-6 16 0t16 0 16 0 16 0v18H0z" fill="#4c8f3e"/><g transform="translate(30 26)"><path d="M-2-2q-8-12-16-8 6 2 8 10z" fill="#5b4a3b" stroke="#1c1a2b" stroke-width="2"/><ellipse cx="0" cy="2" rx="12" ry="6" fill="#9a7b5e" stroke="#1c1a2b" stroke-width="2.5"/><circle cx="12" cy="-3" r="5" fill="#1f6e4a" stroke="#1c1a2b" stroke-width="2.5"/><path d="M16-4l6 1-6 3z" fill="#f2c94c" stroke="#1c1a2b" stroke-width="1.5"/></g><g fill="none" stroke="#f0544f" stroke-width="3"><circle cx="46" cy="40" r="9"/><path d="M46 26v8M46 46v8M32 40h8M52 40h8"/></g></svg>',
     xeri: '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="8" fill="#16703f"/><g stroke="#1c1a2b" stroke-width="2.5"><rect x="8" y="14" width="26" height="38" rx="4" fill="#fffdf6" transform="rotate(-14 21 33)"/><rect x="30" y="12" width="26" height="38" rx="4" fill="#fffdf6" transform="rotate(12 43 31)"/></g><text x="17" y="38" font-size="18" font-weight="800" fill="#1c1a2b" font-family="sans-serif" transform="rotate(-14 21 33)">J</text><text x="38" y="37" font-size="20" fill="#d42a35" font-family="sans-serif" transform="rotate(12 43 31)">♥</text></svg>',
