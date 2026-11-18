@@ -501,6 +501,8 @@
   };
   const FACE = { J: 'Βαλές', Q: 'Ντάμα', K: 'Ρήγας' };
   function paintCard(el, c) {
+    if (isChroma()) return paintChroma(el, c);
+    el.classList.remove('ck');
     el.classList.toggle('red', !!c && 'HD'.includes(suitOf(c)));
     el.classList.toggle('empty', !c);
     el.replaceChildren();
@@ -525,6 +527,91 @@
       });
     }
   }
+  // ---------- Χρωμοφύλλα: χρωματιστά φύλλα (ίδια οθόνη με την Ξερή) ----------
+  const CK = { R: '#ec3b43', Y: '#ffc21a', G: '#22b35e', B: '#2d7ff0' };
+  const CKN = { R: 'Κόκκινο', Y: 'Κίτρινο', G: 'Πράσινο', B: 'Μπλε' };
+  const isChroma = () => !!(cc && cc.kind === 'chroma');
+  const ckBase = (c) => String(c).split('.')[0];
+  const ckCol = (c) => { const b = ckBase(c); return CK[b[0]] ? b[0] : null; };
+  const ckVal = (c) => { const b = ckBase(c); return CK[b[0]] ? b.slice(1) : b; };
+  const ckSvg = {
+    S: '<svg viewBox="-10 -10 20 20"><circle r="6.4" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M-4.4 4.4 4.4-4.4" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+    V: '<svg viewBox="-10 -10 20 20"><g fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M-6 -1A6 6 0 0 1 4-4.6"/><path d="M6 1A6 6 0 0 1-4 4.6"/></g><path d="M1.6-8 6.4-4 1.2-1.6Z M-1.6 8-6.4 4-1.2 1.6Z" fill="currentColor"/></svg>',
+  };
+  function ckSym(v) {
+    const e = document.createElement('i');
+    e.className = 'ks';
+    if (ckSvg[v]) e.innerHTML = ckSvg[v];
+    else e.textContent = v === 'D' ? '+2' : v === 'F' ? '+4' : v;
+    if (v === '6' || v === '9') e.classList.add('ul');
+    return e;
+  }
+  function paintChroma(el, c, chosen) {
+    el.classList.remove('red', 'face', 'ace');
+    el.classList.add('ck');
+    el.classList.toggle('empty', !c);
+    el.replaceChildren();
+    if (!c) return;
+    const col = ckCol(c), v = ckVal(c);
+    el.classList.toggle('wild', !col);
+    el.style.setProperty('--kc', col ? CK[col] : '#1c1a2b');
+    const mid = document.createElement('i'); mid.className = 'kb';
+    if (col || v === 'F') mid.append(ckSym(v));
+    if (!col && chosen) mid.style.boxShadow = `0 0 0 6cqw ${CK[chosen]}`;
+    el.append(mid);
+    for (const k of ['tl', 'br']) {
+      const n = col || v === 'F' ? ckSym(v) : document.createElement('i');
+      if (!col && v !== 'F') n.className = 'ks rb';
+      n.classList.add('kn', k);
+      el.append(n);
+    }
+  }
+  function ckOk(c) {
+    if (!c || !cc) return false;
+    if (cc.drew && c !== cc.drew) return false;
+    if (!ckCol(c)) return true;
+    return ckCol(c) === cc.col || (!!cc.top && !!ckCol(cc.top) && ckVal(c) === ckVal(cc.top));
+  }
+  let ckPending = null, ckLastSent = false;
+  function ckPick(col) {
+    $('#ckPick').hidden = true;
+    if (!ckPending || !cardsCanPlay()) { ckPending = null; return; }
+    ckSend(ckPending, col);
+    ckPending = null;
+  }
+  function ckSend(code, col) {
+    sendMsg({ type: 'card', act: 'play', c: code, col: col || null, last: ckLastSent });
+    cardSent = cc.tid; vibrate(25);
+    const el = [...$('#hand').children].find((b) => b.dataset.c === code);
+    if (el) el.classList.add('gone');
+    cardSel = null; cardsUi();
+  }
+  function ckAct(act) {
+    if (!cardsCanPlay()) return cardHint(cc && cc.turn ? `Παίζει: ${cc.turn.name}` : 'Περίμενε…');
+    if (act === 'take') {
+      if (cc.drew) sendMsg({ type: 'card', act: 'pass' }); else sendMsg({ type: 'card', act: 'draw' });
+      cardSent = cc.tid; vibrate(20); cardSel = null; cardsUi(); return;
+    }
+    if (!cardSel) { vibrate(30); return cardHint(cc.drew ? 'Διάλεξε το φύλλο που τράβηξες ή πάτα «ΠΑΣΟ»' : 'Διάλεξε πρώτα ένα φύλλο'); }
+    if (!ckOk(cardSel)) {
+      vibrate([30, 40, 30]);
+      if (cc.drew) return cardHint('Μπορείς να παίξεις μόνο το φύλλο που τράβηξες');
+      return cardHint(`Δεν κάνει! Θέλει ${CKN[cc.col] || ''} ή ίδιο σύμβολο. Αλλιώς «ΤΡΑΒΑ»`);
+    }
+    if (!ckCol(cardSel)) { ckPending = cardSel; $('#ckPick').hidden = false; vibrate(15); return; }
+    ckSend(cardSel);
+  }
+  document.querySelectorAll('#ckPick [data-col]').forEach((b) => b.addEventListener('click', () => ckPick(b.dataset.col)));
+  $('#ckPickNo').addEventListener('click', () => { ckPending = null; $('#ckPick').hidden = true; });
+  window.addEventListener('resize', () => { if (isChroma() && !$('#scrCards').hidden) setTimeout(() => renderCards(cc), 60); });
+  $('#scrCards .xr-deck').addEventListener('click', () => { if (isChroma() && !cc.drew) ckAct('take'); });
+  $('#btnLast').addEventListener('click', () => {
+    if (!cc || !cc.last || ckLastSent) return;
+    ckLastSent = true; vibrate([40, 30, 40]);
+    sendMsg({ type: 'card', act: 'last' });
+    $('#btnLast').hidden = true;
+  });
+
   let cHintT = 0;
   function cardHint(t) {
     const h = $('#cardsHint');
@@ -534,7 +621,22 @@
   const cardTakes = (c) => !!(cc && cc.top && c && (rankOf(c) === 'J' || rankOf(c) === rankOf(cc.top)));
   function cardsCanPlay() { return cc && cc.active && cardSent !== cc.tid; }
   function renderCards(c) {
+    const wasCk = isChroma();
     cc = c;
+    const ck = isChroma();
+    if (wasCk !== ck) { cardHandKey = ''; $('#cardsTop').dataset.c = '-'; }
+    $('#scrCards').classList.toggle('ck', ck);
+    $('#btnThrow').innerHTML = ck ? '<i>🎴</i>ΠΑΙΞΕ' : '<i>🃏</i>ΠΕΤΑ';
+    $('#btnTake').innerHTML = ck ? (c.drew ? '<i>👋</i>ΠΑΣΟ' : '<i>🫳</i>ΤΡΑΒΑ') : '<i>✋</i>ΠΑΡΕ ΤΑ';
+    $('#btnTake').classList.toggle('pass', ck && !!c.drew);
+    if (!c.last || c.called) ckLastSent = !!c.called;
+    $('#btnLast').hidden = !(ck && c.last && !ckLastSent);
+    if (!ck || !c.active) { $('#ckPick').hidden = true; ckPending = null; }
+    if (ck) {
+      const ring = $('#scrCards .xr-pile');
+      ring.style.setProperty('--kc', CK[c.col] || 'transparent');
+      $('#cardsPileN').textContent = c.col ? CKN[c.col] : '';
+    }
     const key = c.hand.join(',');
     if (!c.hand.includes(cardSel)) cardSel = null;
     if (key !== cardHandKey) {
@@ -552,13 +654,19 @@
     }
     $('#hand').dataset.n = c.hand.length;
     const kids = [...$('#hand').children], mid = (kids.length - 1) / 2;
-    kids.forEach((b, i) => { const d = i - mid; b.style.setProperty('--a', (d * 5) + 'deg'); b.style.setProperty('--y', (d * d * 1.6) + '%'); b.style.zIndex = i + 1; });
+    const step = ck ? Math.min(5, 36 / Math.max(1, kids.length)) : 5, yk = ck ? Math.min(1.6, 30 / Math.max(1, kids.length * kids.length)) : 1.6;
+    let ov = '';
+    if (ck && kids.length > 1) {
+      const hw = $('#hand').clientWidth, cw = kids[0].offsetWidth || 1;
+      ov = Math.min(-cw * 0.32, (hw * 0.8 - cw) / (kids.length - 1) - cw) + 'px';
+    }
+    kids.forEach((b, i) => { const d = i - mid; b.style.setProperty('--a', (d * step) + 'deg'); b.style.setProperty('--y', (d * d * yk) + '%'); b.style.zIndex = i + 1; b.style.marginLeft = i && ov ? ov : ''; b.classList.toggle('ok', ck && !!c.active && ckOk(b.dataset.c)); });
     const topEl = $('#cardsTop');
     if (topEl.dataset.c !== (c.top || '')) {
-      topEl.dataset.c = c.top || ''; paintCard(topEl, c.top);
+      topEl.dataset.c = c.top || ''; if (ck) paintChroma(topEl, c.top, c.col); else paintCard(topEl, c.top);
       topEl.style.animation = 'none'; void topEl.offsetWidth; topEl.style.animation = '';
     }
-    $('#cardsPileN').textContent = c.pileN ? `${c.pileN} ${c.pileN === 1 ? 'φύλλο' : 'φύλλα'}` : 'άδειο';
+    if (!ck) $('#cardsPileN').textContent = c.pileN ? `${c.pileN} ${c.pileN === 1 ? 'φύλλο' : 'φύλλα'}` : 'άδειο';
     $('#scrCards').dataset.pile = Math.min(c.pileN || 0, 3);
     $('#scrCards').dataset.deck = c.deckN > 12 ? 3 : c.deckN > 0 ? (c.deckN > 6 ? 2 : 1) : 0;
     $('#cardsDeckN').textContent = c.deckN ? `${c.deckN} φύλλα` : 'τελείωσε';
@@ -572,13 +680,20 @@
     const on = cardsCanPlay();
     $('#scrCards').classList.toggle('mine', !!on);
     [...$('#hand').children].forEach((b) => b.classList.toggle('sel', b.dataset.c === cardSel));
+    if (isChroma()) {
+      const any = cc.hand.some(ckOk);
+      $('#btnThrow').classList.toggle('ready', !!(on && cardSel && ckOk(cardSel)));
+      $('#btnTake').classList.toggle('ready', !!(on && (cc.drew ? !cardSel : !any)));
+    } else {
     const t = cardTakes(cardSel);
     $('#btnThrow').classList.toggle('ready', !!(on && cardSel && !t));
     $('#btnTake').classList.toggle('ready', !!(on && cardSel && t));
+    }
     $('#btnThrow').classList.toggle('off', !on);
     $('#btnTake').classList.toggle('off', !on);
   }
   function cardAct(act) {
+    if (isChroma()) return ckAct(act);
     if (!cardsCanPlay()) return cardHint(cc && cc.turn ? `Παίζει: ${cc.turn.name}` : 'Περίμενε…');
     if (!cardSel) { vibrate(30); return cardHint('Διάλεξε πρώτα ένα φύλλο από τη βεντάλια'); }
     const t = cardTakes(cardSel);
