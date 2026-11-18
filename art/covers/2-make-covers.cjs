@@ -9,7 +9,7 @@ const GAMES = [...common.matchAll(/id: '(\w+)', title: (['"])(.*?)\2, sub: '(.*?
 const C = {
   cups: ['#ff4d5e', 1.5, 50, 25], star: ['#ffc93d', 1.25, 50, 40, 1], balloon: ['#3da9ff', 1.3, 45, 30], bear: ['#ff9a2e', 1.5, 50, 45],
   tomato: ['#e8302a', 1.5, 25, 40], hoops: ['#f07a1f', 1.45, 50, 45], bubpanda: ['#4fc3ff', 1.35, 50, 40], bubbles: ['#ff5a6e', 1.5, 45, 62],
-  space: ['#6ff3ff', 1.4, 60, 55], hunt: ['#8fd14f', 1.3, 50, 35], jungle: ['#4fcf32', 1.45, 30, 70], xeri: ['#ffd76a', 1.12, 50, 40],
+  space: ['#6ff3ff', 1.4, 60, 55], hunt: ['#8fd14f', 1.3, 50, 35], jungle: ['#4fcf32', 1.4, 75, 85], xeri: ['#ffd76a', 1.12, 50, 40],
   race: ['#ff6b3d', 1.6, 75, 62], trail: ['#9bd35a', 1.4, 50, 60], longjump: ['#3da9ff', 1.6, 62, 62], panda: ['#7cc84a', 1.4, 60, 35],
   sumo: ['#9b5de5', 1.2, 50, 40, 1], who: ['#b98cff', 1.15, 50, 30, 1], ball: ['#ff5a8a', 1.45, 78, 82], chroma: ['#ffc21a', 1.75, 50, 36],
   hedgehog: ['#ffc93d', 1.3, 45, 45],

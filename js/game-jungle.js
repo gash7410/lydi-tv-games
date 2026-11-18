@@ -926,10 +926,14 @@
       this.changed();
       this.h.onOver && this.h.onOver({
         winner: mvp,
-        title: won ? 'Η ομάδα τερμάτισε! Πρώτος σε πόντους' : 'Πρώτος της ομάδας',
+        title: this.parts.length === 1 ? (won ? 'Τερμάτισες τη ζούγκλα!' : 'Καλή προσπάθεια!')
+          : (won ? 'Η ομάδα τερμάτισε! Πρώτος σε πόντους' : 'Πρώτος της ομάδας'),
         icon: won ? '🏆' : '🌴',
-        stats: won ? `Ομάδα: ${this.team} πόντοι · πέρασε και τις ${AREAS.length} περιοχές με ${this.lives} ❤`
-          : `Ομάδα: ${this.team} πόντοι · έφτασε στην περιοχή ${this.area}/${AREAS.length}`,
+        stats: this.parts.length === 1
+          ? (won ? `${this.team} πόντοι · πέρασες και τις ${AREAS.length} περιοχές με ${this.lives} ❤`
+            : `${this.team} πόντοι · έφτασες στην περιοχή ${this.area}/${AREAS.length}`)
+          : (won ? `Ομάδα: ${this.team} πόντοι · πέρασε και τις ${AREAS.length} περιοχές με ${this.lives} ❤`
+            : `Ομάδα: ${this.team} πόντοι · έφτασε στην περιοχή ${this.area}/${AREAS.length}`),
         rank: rank.map((q) => ({ name: q.name, color: q.color, st: `${q.score} πόντοι · ${q.fruits} ${q.fruits === 1 ? 'φρούτο' : 'φρούτα'} · ${q.foes} ${q.foes === 1 ? 'εχθρός' : 'εχθροί'}` })),
       });
     }
@@ -1441,5 +1445,6 @@
     }
   }
 
+  JungleGame.K = { LH, GY, AREAS, FRUIT, FOE, ITEM };
   Mini.games.jungle = JungleGame;
 })();
