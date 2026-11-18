@@ -7,10 +7,32 @@
   const { Base, U } = Mini;
   const SRC = (document.currentScript && document.currentScript.src) || location.href;
   let T = null, loadP = null;
+  // Το Three.js r170 θέλει WebGL2. Σε τηλεοράσεις που έχουν μόνο WebGL1 φορτώνουμε το r162 (το τελευταίο με WebGL1).
+  function glLevel() {
+    const q = /[?&]gl1/.test(location.search) || (window.localStorage && localStorage.getItem('tvp.gl1') === '1');
+    const test = (k) => { try { const c = document.createElement('canvas'); const g = c.getContext(k, { failIfMajorPerformanceCaveat: false }); if (!g) return false; const l = g.getExtension('WEBGL_lose_context'); if (l) l.loseContext(); return true; } catch (e) { return false; } };
+    if (!q && test('webgl2')) return 2;
+    return test('webgl') || test('experimental-webgl') ? 1 : 0;
+  }
   function loadThree() {
     if (T) return Promise.resolve(T);
-    if (!loadP) loadP = import(new URL('vendor/three.module.min.js', SRC).href).then((m) => (T = m)).catch((e) => { loadP = null; throw e; });
+    if (!loadP) {
+      const lv = glLevel();
+      loadP = lv === 0 ? Promise.reject(new Error('NOGL'))
+        : import(new URL(lv === 2 ? 'vendor/three.module.min.js' : 'vendor/three-r162.module.min.js', SRC).href).then((m) => (T = m));
+      loadP = loadP.catch((e) => { if (e && e.message !== 'NOGL') loadP = null; throw e; });
+    }
     return loadP;
+  }
+  // WebGLRenderer με εφεδρικές, πιο ελαφριές ρυθμίσεις αν οι πρώτες αποτύχουν
+  function makeRenderer(cv) {
+    const opts = [{ antialias: true, powerPreference: 'high-performance' }, { antialias: false }, { antialias: false, failIfMajorPerformanceCaveat: false, precision: 'mediump' }];
+    let err;
+    for (let i = 0; i < opts.length; i++) {
+      if (i) { const n = document.createElement('canvas'); n.id = cv.id; n.style.cssText = cv.style.cssText; cv.replaceWith(n); cv = n; } // νέος καμβάς σε κάθε δοκιμή
+      try { return new T.WebGLRenderer(Object.assign({ canvas: cv }, opts[i])); } catch (e) { err = e; }
+    }
+    throw err;
   }
   // προφόρτωση όταν ησυχάσει η αρχική οθόνη
   setTimeout(() => (window.requestIdleCallback || setTimeout)(() => loadThree().catch(() => {})), 8000);
@@ -407,8 +429,14 @@
       const id = (this.gen = (this.gen || 0) + 1);
       loadThree().then(() => {
         if (!this.running || id !== this.gen) return;
-        try { this.init3D(); this.startLevel(0); } catch (e) { console.error(e); this.loadErr = String(e && e.message || e); }
-      }).catch((e) => { this.loadErr = 'Δεν φορτώθηκε το 3D (' + (e && e.message || e) + ')'; });
+        try { this.init3D(); this.startLevel(0); } catch (e) { console.error(e); this.loadErr = this.glMsg(e); }
+      }).catch((e) => { this.loadErr = this.glMsg(e); });
+    }
+
+    glMsg(e) {
+      const m = String((e && e.message) || e || '');
+      if (m === 'NOGL' || /webgl/i.test(m)) return 'Αυτή η συσκευή δεν υποστηρίζει 3D γραφικά (WebGL).\nΔοκίμασε ενημέρωση του «Android System WebView» ή διάλεξε άλλο παιχνίδι.';
+      return 'Δεν φορτώθηκε το 3D (' + m + ')';
     }
 
     end() {
@@ -433,10 +461,10 @@
         cv.id = 'stage3d';
         cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;display:block';
         this.c.parentNode.insertBefore(cv, this.c);
-        const R = (this.R = new T.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' }));
+        const R = (this.R = makeRenderer(cv)); this.cv3 = R.domElement; // σε WebGL1 (παλιές GPU) χωρίς σκιές
         this.q = 1;
         R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-        R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap;
+        R.shadowMap.enabled = !!R.capabilities.isWebGL2; R.shadowMap.type = T.PCFSoftShadowMap;
         R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
         this.scene = new T.Scene();
         this.cam = new T.PerspectiveCamera(32, this.W / this.H, 0.5, 600);
@@ -1264,7 +1292,8 @@
       x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, this.c.width, this.c.height); x.restore();
       if (this.phase === 'load' || !this.map) {
         x.fillStyle = '#1a2f5a'; x.fillRect(0, 0, this.W, this.H);
-        this.text(this.loadErr || 'Φόρτωση 3D κόσμου…', this.W / 2, this.H / 2, this.vh * (this.loadErr ? 3 : 5), '#ffe066', { fam: 'Comfortaa', w: 700 });
+        const ls = (this.loadErr || 'Φόρτωση 3D κόσμου…').split('\n'), fs = this.vh * (this.loadErr ? 3.4 : 5);
+        ls.forEach((l, i) => this.text(l, this.W / 2, this.H / 2 + (i - (ls.length - 1) / 2) * fs * 1.6, i ? fs * 0.75 : fs, i ? '#ffffff' : '#ffe066', { fam: 'Comfortaa', w: 700 }));
         return;
       }
       this.render3D();
