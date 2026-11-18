@@ -258,6 +258,7 @@
       parts.push({ name: 'Ρομπότ', color: TVP.COLORS.find((c) => !used.includes(c.hex)), p: null, bot: true });
     }
     S.phase = 'play'; S.winner = null;
+    try { window.TVDBG && TVDBG.mark('ξεκινά παιχνίδι ' + S.game + ' με ' + parts.length + ' παίκτες'); } catch (e) {}
     mini = minis[S.game];
     game.freeze(); game.paused = true; $('#stage').hidden = true;
     $('#lobby').hidden = true; $('#over').hidden = true; $('#hud').hidden = false; $('#playersBar').hidden = true;
@@ -299,6 +300,7 @@
   }
 
   function toLobby() {
+    try { window.TVDBG && TVDBG.mark('επιστροφή στο μενού'); } catch (e) {}
     $('#quit').hidden = true;
     S.phase = 'lobby'; S.winner = null;
     S.players = S.players.filter((p) => p.connected);
@@ -378,16 +380,24 @@
   $('#btnQuit').addEventListener('click', askQuit);
   $('#btnQuitYes').addEventListener('click', toLobby);
   $('#btnQuitNo').addEventListener('click', closeQuit);
-  // Επιστρέφει true αν το «Πίσω» χειρίστηκε εδώ· αλλιώς (στο μενού) η εφαρμογή κλείνει κανονικά.
+  // «Πίσω» του τηλεχειριστηρίου (το καλεί το MainActivity). Επιστρέφει 'exit' ΜΟΝΟ όταν είμαστε ήσυχα στο μενού·
+  // οτιδήποτε άλλο (true, σφάλμα, άγνωστη κατάσταση) σημαίνει ότι η εφαρμογή ΔΕΝ κλείνει.
+  let lastGameBack = 0;
+  const mark = (m) => { try { window.TVDBG && TVDBG.mark(m); } catch (e) {} };
   window.tvBack = function () {
-    if (!$('#quit').hidden) { closeQuit(); return true; }
-    if (S.phase === 'play') { askQuit(); return true; }
-    if (S.phase === 'over') { toLobby(); return true; }
-    return false;
+    const where = `φάση ${S.phase}, παράθυρο ${$('#quit').hidden ? 'κλειστό' : 'ανοιχτό'}`;
+    let r = true;
+    if (!$('#quit').hidden) closeQuit();
+    else if (S.phase === 'play') askQuit();
+    else if (S.phase === 'over') toLobby();
+    else if (S.phase === 'lobby' && !$('#lobby').hidden && Date.now() - lastGameBack > 2500) r = 'exit';
+    if (r !== 'exit') lastGameBack = Date.now();
+    mark(`«Πίσω» (${where}) → ${r === 'exit' ? 'κλείνει η εφαρμογή' : 'μένει'}`);
+    return r;
   };
   addEventListener('keydown', (e) => {
     if (['Escape', 'Backspace', 'GoBack', 'BrowserBack'].includes(e.key) && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
-      if (window.tvBack()) e.preventDefault();
+      e.preventDefault(); window.tvBack();
       return;
     }
     // στο παιχνίδι, ΟΚ ή βελάκι στο τηλεχειριστήριο φέρνει το κουμπί «Έξοδος»

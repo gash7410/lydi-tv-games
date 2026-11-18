@@ -25,6 +25,23 @@
   }, true);
   addEventListener('unhandledrejection', (e) => add('error', ['Promise: ', e.reason]));
 
+  // «Ίχνη»: σύντομες σημειώσεις (πατήματα «Πίσω», φάσεις, κλείσιμο σελίδας) που μένουν στη μνήμη της
+  // τηλεόρασης. Στο επόμενο άνοιγμα φαίνονται στα logs, ώστε να ξέρουμε πώς τελείωσε η προηγούμενη φορά.
+  const CRUMB_KEY = 'tvp_crumbs';
+  let crumbs = [];
+  try {
+    const prev = JSON.parse(localStorage.getItem(CRUMB_KEY) || '[]');
+    if (prev.length) add('warn', ['Προηγούμενη φορά (τελευταία ίχνη):\n' + prev.map((c) => `${new Date(c.at).toLocaleTimeString('el-GR')} ${c.m}`).join('\n')]);
+  } catch (e) {}
+  function mark(m) {
+    crumbs.push({ at: Date.now(), m: String(m).slice(0, 200) });
+    if (crumbs.length > 40) crumbs.shift();
+    try { localStorage.setItem(CRUMB_KEY, JSON.stringify(crumbs)); } catch (e) {}
+  }
+  mark('άνοιξε η εφαρμογή');
+  addEventListener('pagehide', () => mark('η σελίδα κλείνει (pagehide)'));
+  document.addEventListener('visibilitychange', () => mark('ορατότητα: ' + document.visibilityState));
+
   function info() {
     const tv = window.__tv, S = tv && tv.S;
     const vis = [...document.querySelectorAll('body > section, body > canvas, #hud')].filter((el) => !el.hidden).map((el) => el.id);
@@ -121,5 +138,5 @@
     } catch (e) { reply({ error: String(e && e.message || e) }); }
   }
 
-  window.TVDBG = { handle, info, shot, logs, key };
+  window.TVDBG = { handle, info, shot, logs, key, mark };
 })();

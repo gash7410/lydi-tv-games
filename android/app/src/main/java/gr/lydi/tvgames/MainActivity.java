@@ -14,15 +14,16 @@ public class MainActivity extends BridgeActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         // «Πίσω» του τηλεχειριστηρίου: μέσα σε παιχνίδι ρωτά «Έξοδος από το παιχνίδι;» (window.tvBack στο tv.js).
-        // Μόνο στο μενού των παιχνιδιών κλείνει η εφαρμογή, όπως πριν.
+        // Η εφαρμογή κλείνει ΜΟΝΟ όταν το tvBack απαντήσει ρητά "exit" (ήσυχα στο μενού).
+        // Σφάλμα, καθυστέρηση ή άγνωστη απάντηση = μένουμε ανοιχτοί.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 final OnBackPressedCallback self = this;
-                if (getBridge() == null || getBridge().getWebView() == null) { exitApp(self); return; }
+                if (getBridge() == null || getBridge().getWebView() == null) return;
                 getBridge().getWebView().evaluateJavascript(
-                    "(function(){try{return !!(window.tvBack&&window.tvBack());}catch(e){return false;}})()",
-                    value -> { if (!"true".equals(value)) exitApp(self); });
+                    "(function(){try{return window.tvBack?String(window.tvBack()):'none';}catch(e){return 'error';}})()",
+                    value -> { if ("\"exit\"".equals(value)) exitApp(self); });
             }
         });
     }
