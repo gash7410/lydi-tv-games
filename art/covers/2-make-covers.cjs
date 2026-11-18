@@ -12,6 +12,7 @@ const C = {
   space: ['#6ff3ff', 1.4, 60, 55], hunt: ['#8fd14f', 1.3, 50, 35], jungle: ['#4fcf32', 1.45, 30, 70], xeri: ['#ffd76a', 1.12, 50, 40],
   race: ['#ff6b3d', 1.6, 75, 62], trail: ['#9bd35a', 1.4, 50, 60], longjump: ['#3da9ff', 1.6, 62, 62], panda: ['#7cc84a', 1.4, 60, 35],
   sumo: ['#9b5de5', 1.2, 50, 40, 1], who: ['#b98cff', 1.15, 50, 30, 1], ball: ['#ff5a8a', 1.45, 78, 82], chroma: ['#ffc21a', 1.75, 50, 36],
+  hedgehog: ['#ffc93d', 1.3, 45, 45],
 };
 (async () => {
   const b = await chromium.launch({ executablePath: '/ms-playwright/chromium-1254/chrome-linux64/chrome' });
